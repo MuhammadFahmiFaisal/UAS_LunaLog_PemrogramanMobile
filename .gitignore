@@ -43,3 +43,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Reference files
+/docs/
+
+# Flutter generated
+.metadata
+
+# Secrets
+opencode.json
+
+opencode.json

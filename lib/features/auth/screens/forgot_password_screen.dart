@@ -2,19 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/routes/app_routes.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  bool _obscurePassword = true;
   late AnimationController _floatController;
 
   @override
@@ -34,7 +32,6 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
     _scrollController.dispose();
     _floatController.dispose();
     super.dispose();
@@ -83,11 +80,11 @@ class _LoginScreenState extends State<LoginScreen>
                   // Logo Header
                   _buildLogoHeader(),
                   const SizedBox(height: 40),
-                  // Login Form Card
-                  _buildLoginCard(),
+                  // Forgot Password Form Card
+                  _buildForgotPasswordCard(),
                   const SizedBox(height: 32),
-                  // Footer Link
-                  _buildFooterLink(),
+                  // Back to Login Link
+                  _buildBackToLoginLink(),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -127,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 24),
         const Text(
-          'Welcome Back',
+          'Lupa Kata Sandi',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 28,
@@ -138,7 +135,8 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 8),
         const Text(
-          'Senang melihatmu kembali di LunaLog.',
+          'Masukkan email kamu untuk mereset kata sandi.',
+          textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 14,
@@ -150,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildLoginCard() {
+  Widget _buildForgotPasswordCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),
@@ -216,88 +214,6 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-
-            // Password Field
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Kata Sandi',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF311119),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.forgotPassword);
-                  },
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text(
-                    'Lupa sandi?',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF8B4A5F),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                hintText: '••••••••',
-                prefixIcon: const Icon(
-                  Icons.lock_outlined,
-                  color: Color(0xFF847376),
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: const Color(0xFF847376),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-                filled: true,
-                fillColor: const Color(0xFFFFF0F1),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD6C1C5)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD6C1C5)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF8B4A5F),
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-              ),
-            ),
             const SizedBox(height: 32),
 
             // Submit Button
@@ -306,7 +222,20 @@ class _LoginScreenState extends State<LoginScreen>
               height: 56,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, AppRoutes.main);
+                  // Show confirmation snackbar
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Tautan reset telah dikirim ke email kamu.',
+                        style: TextStyle(fontFamily: 'Inter'),
+                      ),
+                      backgroundColor: Color(0xFF8B4A5F),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                      ),
+                    ),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF8B4A5F),
@@ -320,7 +249,7 @@ class _LoginScreenState extends State<LoginScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Masuk',
+                      'Kirim Tautan Reset',
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 16,
@@ -328,121 +257,23 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                     SizedBox(width: 8),
-                    Icon(Icons.arrow_forward, size: 20),
+                    Icon(Icons.send_outlined, size: 20),
                   ],
                 ),
               ),
             ),
-
-            // Social Login Divider
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: const Color(0xFFD6C1C5).withValues(alpha: 0.5),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'atau masuk dengan',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF847376),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: const Color(0xFFD6C1C5).withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Social Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSocialButton(
-                    icon: Icons.g_mobiledata,
-                    label: 'Google',
-                    iconWidget: SvgPicture.asset(
-                      'assets/icons/google-logo.svg',
-                      width: 20,
-                      height: 20,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildSocialButton(
-                    icon: Icons.facebook,
-                    label: 'Facebook',
-                    iconWidget: const Icon(
-                      Icons.facebook,
-                      size: 20,
-                      color: Color(0xFF8B4A5F),
-                    ),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSocialButton({
-    required IconData icon,
-    required String label,
-    Widget? iconWidget,
-  }) {
-    return SizedBox(
-      height: 48,
-      child: OutlinedButton(
-        onPressed: () {},
-        style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          side: const BorderSide(color: Color(0xFFD6C1C5)),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            iconWidget ?? Icon(icon, size: 20, color: const Color(0xFF311119)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF311119),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFooterLink() {
+  Widget _buildBackToLoginLink() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
-          'Belum punya akun? ',
+          'Ingat kata sandi? ',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 14,
@@ -452,10 +283,10 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         GestureDetector(
           onTap: () {
-            Navigator.pushNamed(context, AppRoutes.register);
+            Navigator.pushReplacementNamed(context, AppRoutes.login);
           },
           child: const Text(
-            'Daftar di sini',
+            'Kembali ke Masuk',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/routes/app_routes.dart';
+import 'core/theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,11 +14,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'LunaLog',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.pink),
-        useMaterial3: true,
-      ),
-      initialRoute: AppRoutes.login,
+      theme: AppTheme.lightTheme,
+      initialRoute: AppRoutes.splash,
       routes: AppRoutes.routes,
     );
   }
