@@ -2,18 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/routes/app_routes.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+class ResetPasswordScreen extends StatefulWidget {
+  const ResetPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
+class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     with SingleTickerProviderStateMixin {
-  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   late AnimationController _floatController;
 
@@ -33,34 +37,34 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _scrollController.dispose();
     _floatController.dispose();
     super.dispose();
   }
 
-  void _handleSendOtp() {
+  Future<void> _handleReset() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) {
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Kode OTP telah dikirim ke email kamu.',
-                style: TextStyle(fontFamily: 'Inter'),
-              ),
-              backgroundColor: Color(0xFF8B4A5F),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
-            ),
-          );
-          Navigator.pushNamed(context, AppRoutes.otpVerification);
-        }
-      });
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password berhasil diubah'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+        ),
+      );
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.passwordResetSuccess,
+        (route) => false,
+      );
     }
   }
 
@@ -104,14 +108,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               child: Column(
                 children: [
                   const SizedBox(height: 40),
-                  // Logo Header
                   _buildLogoHeader(),
                   const SizedBox(height: 40),
-                  // Forgot Password Form Card
-                  _buildForgotPasswordCard(),
+                  _buildResetPasswordCard(),
                   const SizedBox(height: 32),
-                  // Back to Login Link
-                  _buildBackToLoginLink(),
+                  _buildBackLink(),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -151,7 +152,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         ),
         const SizedBox(height: 24),
         const Text(
-          'Lupa Kata Sandi',
+          'Buat Password Baru',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 28,
@@ -162,7 +163,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         ),
         const SizedBox(height: 8),
         const Text(
-          'Masukkan email kamu untuk mereset kata sandi.',
+          'Pastikan password baru kamu mudah diingat.',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: 'Inter',
@@ -175,7 +176,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     );
   }
 
-  Widget _buildForgotPasswordCard() {
+  Widget _buildResetPasswordCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(32),
@@ -199,9 +200,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Email Field
+            // New Password Field
             const Text(
-              'Email',
+              'Password Baru',
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -211,23 +212,118 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ),
             const SizedBox(height: 8),
             TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
+              controller: _passwordController,
+              obscureText: _obscurePassword,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Email tidak boleh kosong';
+                  return 'Password tidak boleh kosong';
                 }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                    .hasMatch(value.trim())) {
-                  return 'Masukkan email yang valid';
+                if (value.trim().length < 6) {
+                  return 'Password minimal 6 karakter';
                 }
                 return null;
               },
               decoration: InputDecoration(
-                hintText: 'nama@email.com',
+                hintText: '••••••••',
                 prefixIcon: const Icon(
-                  Icons.mail_outlined,
+                  Icons.lock_outlined,
                   color: Color(0xFF847376),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: const Color(0xFF847376),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+                filled: true,
+                fillColor: const Color(0xFFFFF0F1),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFD6C1C5)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFD6C1C5)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF8B4A5F),
+                    width: 2,
+                  ),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFFD32F2F)),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFD32F2F),
+                    width: 2,
+                  ),
+                ),
+                errorStyle: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: Color(0xFFD32F2F),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Confirm Password Field
+            const Text(
+              'Konfirmasi Password',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF311119),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _confirmPasswordController,
+              obscureText: _obscureConfirmPassword,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Konfirmasi password tidak boleh kosong';
+                }
+                if (value.trim() != _passwordController.text.trim()) {
+                  return 'Password tidak cocok';
+                }
+                return null;
+              },
+              decoration: InputDecoration(
+                hintText: '••••••••',
+                prefixIcon: const Icon(
+                  Icons.verified_user_outlined,
+                  color: Color(0xFF847376),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscureConfirmPassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: const Color(0xFF847376),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                    });
+                  },
                 ),
                 filled: true,
                 fillColor: const Color(0xFFFFF0F1),
@@ -270,12 +366,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ),
             const SizedBox(height: 32),
 
-            // Submit Button
+            // Reset Button
             SizedBox(
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleSendOtp,
+                onPressed: _isLoading ? null : _handleReset,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF8B4A5F),
                   foregroundColor: const Color(0xFFFFFFFF),
@@ -299,7 +395,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Kirim Kode OTP',
+                            'Reset Password',
                             style: TextStyle(
                               fontFamily: 'Inter',
                               fontSize: 16,
@@ -307,7 +403,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                             ),
                           ),
                           SizedBox(width: 8),
-                          Icon(Icons.send_outlined, size: 20),
+                          Icon(Icons.check_circle_outline, size: 20),
                         ],
                       ),
               ),
@@ -318,12 +414,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     );
   }
 
-  Widget _buildBackToLoginLink() {
+  Widget _buildBackLink() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Text(
-          'Ingat kata sandi? ',
+          'Kembali ke ',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 14,
@@ -333,10 +429,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         ),
         GestureDetector(
           onTap: () {
-            Navigator.pushReplacementNamed(context, AppRoutes.login);
+            Navigator.pop(context);
           },
           child: const Text(
-            'Kembali ke Masuk',
+            'Verifikasi OTP',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../shared/widgets/widgets.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,7 +16,9 @@ class _LoginScreenState extends State<LoginScreen>
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+  bool _isLoading = false;
   late AnimationController _floatController;
 
   @override
@@ -40,60 +44,52 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  Future<void> _handleLogin() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      await Future.delayed(const Duration(seconds: 1));
+      if (!mounted) return;
+
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted) return;
+      final hasCompletedSetup = prefs.getBool('hasCompletedSetup') ?? false;
+
+      setState(() => _isLoading = false);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Login berhasil'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+        ),
+      );
+      if (hasCompletedSetup) {
+        Navigator.pushReplacementNamed(context, AppRoutes.main);
+      } else {
+        Navigator.pushReplacementNamed(context, AppRoutes.onboardingSetup);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F7),
-      body: Stack(
-        children: [
-          // Decorative Background Blur Circles
-          Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 256,
-              height: 256,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFFFD9E2).withValues(alpha: 0.3),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -100,
-            left: -100,
-            child: Container(
-              width: 384,
-              height: 384,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFFFD0BF).withValues(alpha: 0.2),
-              ),
-            ),
-          ),
-
-          // Main Content
-          SafeArea(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                children: [
-                  const SizedBox(height: 40),
-                  // Logo Header
-                  _buildLogoHeader(),
-                  const SizedBox(height: 40),
-                  // Login Form Card
-                  _buildLoginCard(),
-                  const SizedBox(height: 32),
-                  // Footer Link
-                  _buildFooterLink(),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ),
-        ],
+    return AuthBackground(
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          children: [
+            const SizedBox(height: 40),
+            _buildLogoHeader(),
+            const SizedBox(height: 40),
+            _buildLoginCard(),
+            const SizedBox(height: 32),
+            _buildFooterLink(),
+            const SizedBox(height: 24),
+          ],
+        ),
       ),
     );
   }
@@ -101,30 +97,7 @@ class _LoginScreenState extends State<LoginScreen>
   Widget _buildLogoHeader() {
     return Column(
       children: [
-        AnimatedBuilder(
-          animation: _floatController,
-          builder: (context, child) {
-            return Transform.translate(
-              offset: Offset(0, -15 * _floatController.value),
-              child: child,
-            );
-          },
-          child: Container(
-            width: 64,
-            height: 64,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFFFFFFFF),
-            ),
-            child: Center(
-              child: SvgPicture.asset(
-                'assets/icons/logo1.svg',
-                width: 32,
-                height: 32,
-              ),
-            ),
-          ),
-        ),
+        FloatingLogo(controller: _floatController),
         const SizedBox(height: 24),
         const Text(
           'Welcome Back',
@@ -151,74 +124,30 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildLoginCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFD6C1C5).withValues(alpha: 0.3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF8B4A5F).withValues(alpha: 0.06),
-            blurRadius: 40,
-            spreadRadius: -10,
-            offset: const Offset(0, 20),
-          ),
-        ],
-      ),
+    return AppCard(
       child: Form(
+        key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Email Field
-            const Text(
-              'Email',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF311119),
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
+            AppTextField(
               controller: _emailController,
+              label: 'Email',
+              hintText: 'nama@email.com',
+              prefixIcon: Icons.mail_outlined,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                hintText: 'nama@email.com',
-                prefixIcon: const Icon(
-                  Icons.mail_outlined,
-                  color: Color(0xFF847376),
-                ),
-                filled: true,
-                fillColor: const Color(0xFFFFF0F1),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD6C1C5)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD6C1C5)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF8B4A5F),
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Email tidak boleh kosong';
+                }
+                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                    .hasMatch(value.trim())) {
+                  return 'Masukkan email yang valid';
+                }
+                return null;
+              },
             ),
             const SizedBox(height: 24),
-
-            // Password Field
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -253,140 +182,64 @@ class _LoginScreenState extends State<LoginScreen>
               ],
             ),
             const SizedBox(height: 8),
-            TextField(
+            AppTextField(
               controller: _passwordController,
+              label: '',
+              hintText: '••••••••',
+              prefixIcon: Icons.lock_outlined,
               obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                hintText: '••••••••',
-                prefixIcon: const Icon(
-                  Icons.lock_outlined,
-                  color: Color(0xFF847376),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Kata sandi tidak boleh kosong';
+                }
+                if (value.trim().length < 6) {
+                  return 'Kata sandi minimal 6 karakter';
+                }
+                return null;
+              },
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: const Color(0xFF847376),
                 ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: const Color(0xFF847376),
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
-                ),
-                filled: true,
-                fillColor: const Color(0xFFFFF0F1),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD6C1C5)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFD6C1C5)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF8B4A5F),
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
+                onPressed: () {
+                  setState(() {
+                    _obscurePassword = !_obscurePassword;
+                  });
+                },
               ),
             ),
             const SizedBox(height: 32),
-
-            // Submit Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, AppRoutes.main);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF8B4A5F),
-                  foregroundColor: const Color(0xFFFFFFFF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  elevation: 4,
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Masuk',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward, size: 20),
-                  ],
-                ),
-              ),
+            SubmitButton(
+              label: 'Masuk',
+              isLoading: _isLoading,
+              onPressed: _handleLogin,
+              icon: Icons.arrow_forward,
             ),
-
-            // Social Login Divider
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: const Color(0xFFD6C1C5).withValues(alpha: 0.5),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'atau masuk dengan',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF847376),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      height: 1,
-                      color: const Color(0xFFD6C1C5).withValues(alpha: 0.5),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Social Buttons
+            const SocialLoginDivider(text: 'atau masuk dengan'),
             Row(
               children: [
                 Expanded(
-                  child: _buildSocialButton(
-                    icon: Icons.g_mobiledata,
+                  child: SocialButton(
                     label: 'Google',
-                    iconWidget: SvgPicture.asset(
+                    icon: SvgPicture.asset(
                       'assets/icons/google-logo.svg',
                       width: 20,
                       height: 20,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFF8B4A5F),
+                        BlendMode.srcIn,
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: _buildSocialButton(
-                    icon: Icons.facebook,
+                const Expanded(
+                  child: SocialButton(
                     label: 'Facebook',
-                    iconWidget: const Icon(
+                    icon: Icon(
                       Icons.facebook,
                       size: 20,
                       color: Color(0xFF8B4A5F),
@@ -394,42 +247,6 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSocialButton({
-    required IconData icon,
-    required String label,
-    Widget? iconWidget,
-  }) {
-    return SizedBox(
-      height: 48,
-      child: OutlinedButton(
-        onPressed: () {},
-        style: OutlinedButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          side: const BorderSide(color: Color(0xFFD6C1C5)),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            iconWidget ?? Icon(icon, size: 20, color: const Color(0xFF311119)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF311119),
-              ),
             ),
           ],
         ),
