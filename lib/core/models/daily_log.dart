@@ -38,4 +38,36 @@ class DailyLog {
       notes: notes ?? this.notes,
     );
   }
+
+  factory DailyLog.fromJson(Map<String, dynamic> json) {
+    return DailyLog(
+      id: json['id'] as String,
+      date: DateTime.parse(json['log_date'] as String),
+      flow: FlowLevel.values.firstWhere(
+        (e) => e.name == json['flow'],
+        orElse: () => FlowLevel.none,
+      ),
+      symptoms: (json['symptoms'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
+      mood: json['mood'] != null
+          ? Mood.values.firstWhere(
+              (e) => e.name == json['mood'],
+              orElse: () => Mood.happy,
+            )
+          : null,
+      sexualActivity: json['sexual_activity'] as bool?,
+      notes: json['notes'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'log_date': date.toIso8601String().split('T')[0],
+      'flow': flow.name,
+      'symptoms': symptoms,
+      'mood': mood?.name,
+      'sexual_activity': sexualActivity,
+      'notes': notes,
+    };
+  }
 }

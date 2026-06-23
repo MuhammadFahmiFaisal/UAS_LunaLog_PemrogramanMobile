@@ -154,6 +154,47 @@ class DummyData {
         ),
       ],
     ),
+    Article(
+      id: 'a5',
+      title: 'Mengenal Siklus Ovulasi Anda',
+      category: 'Kesehatan Reproduksi',
+      content:
+          'Ovulasi adalah proses ketika ovarium melepaskan sel telur yang matang. Memahami kapan Anda berovulasi sangat penting baik untuk mencegah maupun merencanakan kehamilan. Biasanya ovulasi terjadi sekitar hari ke-14 pada siklus 28 hari, namun setiap wanita berbeda.',
+      readTimeMinutes: 4,
+      imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA0lB0bA8HhKx9z-Xv7uJ4-5D2p5N7G3t6A5H1b6jB8D3H5E4D1t8K6H5D3A9H7D6b0u1A6H2n6H6D3E5D0u1A6H5B6B8t3u1A6H5B6B8t3u1',
+      tips: [
+        TipItem(
+          title: 'Perhatikan Suhu Basal Tubuh',
+          description:
+              'Suhu tubuh Anda akan sedikit meningkat tepat setelah ovulasi terjadi.',
+        ),
+        TipItem(
+          title: 'Perubahan Lendir Serviks',
+          description:
+              'Menjelang ovulasi, lendir serviks menjadi lebih bening dan licin seperti putih telur mentah.',
+        ),
+      ],
+    ),
+    Article(
+      id: 'a6',
+      title: 'Olahraga yang Tepat Saat Menstruasi',
+      category: 'Kesehatan Fisik',
+      content:
+          'Berolahraga saat menstruasi mungkin terasa berat, namun aktivitas fisik ringan justru dapat melancarkan aliran darah dan melepaskan endorfin yang bertindak sebagai pereda nyeri alami.',
+      readTimeMinutes: 3,
+      tips: [
+        TipItem(
+          title: 'Jalan Santai',
+          description:
+              'Jalan kaki selama 30 menit dapat membantu mengurangi kram perut bagian bawah.',
+        ),
+        TipItem(
+          title: 'Hindari Latihan Beban Berat',
+          description:
+              'Pada hari 1-3 menstruasi, hindari angkat beban yang terlalu berat agar panggul tidak tertekan berlebihan.',
+        ),
+      ],
+    ),
   ];
 
   static Map<String, bool> get periodDayMap {

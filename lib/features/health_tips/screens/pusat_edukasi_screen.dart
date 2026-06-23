@@ -1,33 +1,145 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/data/dummy_data.dart';
+import '../../../core/models/models.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/services/supabase_service.dart';
+import '../../../core/data/dummy_data.dart';
+import '../widgets/hero_article_card.dart';
+import '../widgets/category_section.dart';
+import '../widgets/daily_tip_card.dart';
+import '../widgets/reading_list_section.dart';
 
-class PusatEdukasiScreen extends StatelessWidget {
+class PusatEdukasiScreen extends StatefulWidget {
   const PusatEdukasiScreen({super.key});
 
   @override
+  State<PusatEdukasiScreen> createState() => _PusatEdukasiScreenState();
+}
+
+class _PusatEdukasiScreenState extends State<PusatEdukasiScreen> {
+  List<Article> _articles = [];
+  List<Article> _filteredArticles = [];
+  String? _selectedCategory;
+  bool _isLoading = true;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      List<Article> articles = [];
+      try {
+        articles = await SupabaseService.getArticles();
+        if (articles.isEmpty) {
+          // Seeding database with DummyData.articles
+          for (var article in DummyData.articles) {
+            await SupabaseService.client.from('articles').upsert(article.toJson());
+          }
+          articles = await SupabaseService.getArticles();
+        }
+      } catch (e) {
+        // Fallback to local dummy data if database is offline or unreachable
+        articles = DummyData.articles;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _articles = articles;
+          _filteredArticles = articles;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat artikel: $e'),
+            backgroundColor: AppTheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _applyFilter() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredArticles = _articles.where((article) {
+        final matchesSearch = query.isEmpty ||
+            article.title.toLowerCase().contains(query) ||
+            article.content.toLowerCase().contains(query);
+        final matchesCategory = _selectedCategory == null ||
+            article.category.toLowerCase().trim() == _selectedCategory!.toLowerCase().trim();
+        return matchesSearch && matchesCategory;
+      }).toList();
+    });
+  }
+
+  void _onSearchChanged(String query) {
+    _applyFilter();
+  }
+
+  void _onCategorySelected(String? category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+    _applyFilter();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
         child: Column(
           children: [
             _buildHeader(context),
+            _buildSearchBar(),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 16),
-                    _buildHeroCard(context),
-                    const SizedBox(height: 24),
-                    _buildCategorySection(context),
-                    const SizedBox(height: 24),
-                    _buildDailyTipSection(),
-                    const SizedBox(height: 24),
-                    _buildReadingListSection(context),
+                    if (_searchController.text.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _buildSearchResults(),
+                    ] else ...[
+                      const SizedBox(height: 16),
+                      HeroArticleCard(articles: _articles),
+                      const SizedBox(height: 24),
+                      CategorySection(
+                        selectedCategory: _selectedCategory,
+                        onCategorySelected: _onCategorySelected,
+                        articles: _articles,
+                      ),
+                      const SizedBox(height: 24),
+                      DailyTipCard(articles: _articles),
+                      const SizedBox(height: 24),
+                      ReadingListSection(
+                        articles: _selectedCategory == null ? _articles : _filteredArticles,
+                      ),
+                    ],
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -44,455 +156,90 @@ class PusatEdukasiScreen extends StatelessWidget {
       height: 64,
       color: AppTheme.surface,
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.menu),
-            color: AppTheme.primary,
-          ),
-          const Expanded(
-            child: Text(
-              'Pusat Edukasi',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.primary,
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.search),
-            color: AppTheme.primary,
-          ),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppTheme.outlineVariant),
-            ),
-            child: ClipOval(
-              child: Image.network(
-                DummyData.currentUser.avatarUrl ?? '',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: AppTheme.surfaceContainerHighest,
-                    child: const Icon(
-                      Icons.person,
-                      size: 16,
-                      color: AppTheme.onSurfaceVariant,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeroCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, AppRoutes.detailTips);
-      },
-      child: Container(
-        width: double.infinity,
-        height: 256,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A6F3347),
-              blurRadius: 20,
-              offset: Offset(0, -5),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.network(
-                'https://lh3.googleusercontent.com/aida-public/AB6AXuAS0_uMlYwjJ-CYEFpx4W_pOd0tdqGMJchOkAghkSUNJZ0JwRYXhmHRrBUyp_mRnqKNrJwGTWd8F5F52QtMf7t1d4D-587DL8uT3xwMbTPUz0yz_pLtbGNYVHRZ2H4cz-9csRHAap_RIjI193SIODc3E99SMEKI6JoUCiuMyQ4xPxNq_CdN5tMDcf-c3m22lkXdw0TekEb8GLBTaRjFVH9y5tKyOxFKGbWEqYYdHi32yTgE9Dzo_lF18d8RP-6wWjGhwmKJxYQI1g',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppTheme.primaryContainer,
-                          AppTheme.primaryFixed,
-                        ],
-                      ),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.self_improvement,
-                        color: AppTheme.onPrimaryContainer,
-                        size: 48,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppTheme.primary.withValues(alpha: 0.8),
-                      AppTheme.primary.withValues(alpha: 0.2),
-                      Colors.transparent,
-                    ],
-                    stops: const [0.0, 0.5, 1.0],
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryFixed,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Populer',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.onPrimaryContainer,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Cara Mengurangi Kram Menstruasi',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Temukan pose yoga yang menenangkan untuk meredakan nyeri secara alami.',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+      alignment: Alignment.centerLeft,
+      child: const Text(
+        'Pusat Edukasi',
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: AppTheme.primary,
         ),
       ),
     );
   }
 
-  Widget _buildCategorySection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text(
-              'Kategori Topik',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 20,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.primary,
-              ),
-            ),
-            TextButton(
-              onPressed: () {},
-              child: const Text(
-                'Lihat Semua',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildCategoryCard(
-                icon: Icons.restaurant,
-                iconBg: AppTheme.secondaryContainer,
-                iconColor: AppTheme.onSecondaryContainer,
-                title: 'Nutrisi & Diet',
-                subtitle: '12 Artikel',
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildCategoryCard(
-                icon: Icons.bedtime,
-                iconBg: AppTheme.primaryFixed,
-                iconColor: AppTheme.onPrimaryContainer,
-                title: 'Kesehatan Tidur',
-                subtitle: '8 Artikel',
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildCategoryCard(
-          icon: Icons.favorite,
-          iconBg: AppTheme.tertiaryContainer,
-          iconColor: AppTheme.onTertiaryContainer,
-          title: 'Kesehatan Mental',
-          subtitle: 'Menjaga ketenangan pikiran selama siklus bulanan Anda.',
-          isWide: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryCard({
-    required IconData icon,
-    required Color iconBg,
-    required Color iconColor,
-    required String title,
-    required String subtitle,
-    bool isWide = false,
-  }) {
+  Widget _buildSearchBar() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: AppTheme.surfaceWhite,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A6F3347),
-            blurRadius: 20,
-            offset: Offset(0, -5),
-          ),
-        ],
+        border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.5)),
       ),
-      child: isWide
-          ? Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: iconColor, size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.onSurface,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 14,
-                          color: AppTheme.outline,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(
-                  Icons.chevron_right,
-                  color: AppTheme.outlineVariant,
-                ),
-              ],
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: iconColor, size: 20),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.outline,
-                  ),
-                ),
-              ],
+      child: TextField(
+        controller: _searchController,
+        onChanged: _onSearchChanged,
+        decoration: const InputDecoration(
+          icon: Icon(Icons.search, color: AppTheme.outlineVariant),
+          hintText: 'Cari artikel kesehatan...',
+          border: InputBorder.none,
+          hintStyle: TextStyle(
+            fontFamily: 'Inter',
+            color: AppTheme.outlineVariant,
+          ),
+        ),
+        style: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 16,
+          color: AppTheme.onSurface,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResults() {
+    if (_filteredArticles.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        alignment: Alignment.center,
+        child: Column(
+          children: [
+            Icon(
+              Icons.search_off,
+              size: 64,
+              color: AppTheme.outlineVariant,
             ),
-    );
-  }
+            const SizedBox(height: 16),
+            Text(
+              'Tidak ada artikel yang cocok dengan pencarian Anda.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                color: AppTheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-  Widget _buildDailyTipSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Tips Hari Ini',
-          style: TextStyle(
+        Text(
+          'Hasil Pencarian (${_filteredArticles.length})',
+          style: const TextStyle(
             fontFamily: 'Inter',
-            fontSize: 20,
+            fontSize: 16,
             fontWeight: FontWeight.w500,
-            color: AppTheme.primary,
+            color: AppTheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0A6F3347),
-                blurRadius: 20,
-                offset: Offset(0, -5),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: -8,
-                right: -8,
-                child: Icon(
-                  Icons.format_quote,
-                  color: AppTheme.primary.withValues(alpha: 0.1),
-                  size: 96,
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb,
-                        color: AppTheme.onPrimaryContainer.withValues(alpha: 0.7),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'REKOMENDASI',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.onPrimaryContainer.withValues(alpha: 0.8),
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '"Minum air hangat dengan jahe dapat membantu merelaksasi otot rahim yang tegang."',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                      fontStyle: FontStyle.italic,
-                      color: AppTheme.onPrimaryContainer,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: 48,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppTheme.onPrimaryContainer.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildReadingListSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Lanjut Membaca',
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 20,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.primary,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...DummyData.articles.take(2).map((article) {
+        const SizedBox(height: 16),
+        ..._filteredArticles.map((article) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 16),
             child: _buildReadingItem(context, article),
@@ -502,15 +249,23 @@ class PusatEdukasiScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReadingItem(BuildContext context, dynamic article) {
+  Widget _buildReadingItem(BuildContext context, Article article) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, AppRoutes.detailTips);
+        Navigator.pushNamed(context, AppRoutes.detailTips, arguments: article);
       },
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
+          color: AppTheme.surfaceWhite,
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0A6F3347),
+              blurRadius: 10,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

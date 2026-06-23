@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../features/auth/screens/splash_screen.dart';
+import '../../features/auth/screens/lock_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/otp_verification_screen.dart';
 import '../../features/auth/screens/reset_password_screen.dart';
 import '../../features/auth/screens/password_reset_success_screen.dart';
+import '../../core/models/models.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../../features/onboarding_setup/screens/onboarding_setup_screen.dart';
 import '../../features/home/screens/main_screen.dart';
@@ -23,6 +25,7 @@ import '../../features/profile/screens/security_pin_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
+  static const String lockScreen = '/lock-screen';
   static const String onboarding = '/onboarding';
   static const String onboardingSetup = '/onboarding-setup';
   static const String login = '/login';
@@ -46,12 +49,17 @@ class AppRoutes {
 
   static Map<String, WidgetBuilder> get routes => {
         splash: (context) => const SplashScreen(),
+        lockScreen: (context) => const LockScreen(),
         onboarding: (context) => const OnboardingScreen(),
         onboardingSetup: (context) => const OnboardingSetupScreen(),
         login: (context) => const LoginScreen(),
         register: (context) => const RegisterScreen(),
         forgotPassword: (context) => const ForgotPasswordScreen(),
-        otpVerification: (context) => const OtpVerificationScreen(),
+        otpVerification: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final email = args is String ? args : '';
+          return OtpVerificationScreen(email: email);
+        },
         resetPassword: (context) => const ResetPasswordScreen(),
         passwordResetSuccess: (context) => const PasswordResetSuccessScreen(),
         main: (context) => const MainScreen(),
@@ -70,7 +78,13 @@ class AppRoutes {
           if (periodId.isEmpty) return const SizedBox();
           return DetailRiwayatScreen(periodId: periodId);
         },
-        detailTips: (context) => const DetailTipsScreen(),
+        detailTips: (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args is Article) {
+            return DetailTipsScreen(article: args);
+          }
+          return const DetailTipsScreen();
+        },
         pusatEdukasi: (context) => const PusatEdukasiScreen(),
         editProfil: (context) => const EditProfilScreen(),
         notifications: (context) => const NotifikasiScreen(),

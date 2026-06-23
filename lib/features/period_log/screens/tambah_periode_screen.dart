@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/models/models.dart';
+import '../../../core/services/supabase_service.dart';
 
 class TambahPeriodeScreen extends StatefulWidget {
   const TambahPeriodeScreen({super.key});
@@ -100,20 +102,55 @@ class _TambahPeriodeScreenState extends State<TambahPeriodeScreen> {
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+    try {
+      final profile = await SupabaseService.getUserProfile();
+      if (profile == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sesi habis, silakan login kembali'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Catatan periode berhasil disimpan'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+      final period = Period(
+        id: '',
+        startDate: _startDate!,
+        endDate: _endDate,
+        durationDays: _endDate != null
+            ? _endDate!.difference(_startDate!).inDays + 1
+            : null,
+      );
+
+      await SupabaseService.addPeriod(period);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Catatan periode berhasil disimpan'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
         ),
-      ),
-    );
-    Navigator.pop(context);
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyimpan: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override

@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/routes/app_routes.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
-  const OtpVerificationScreen({super.key});
+  final String email;
+  const OtpVerificationScreen({super.key, required this.email});
 
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
@@ -76,7 +78,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
   String get _otpCode =>
       _otpControllers.map((c) => c.text).join();
 
-  void _handleVerify() {
+  Future<void> _handleVerify() async {
     if (_otpCode.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -94,30 +96,75 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen>
       return;
     }
     setState(() => _isLoading = true);
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      await Supabase.instance.client.auth.verifyOTP(
+        email: widget.email,
+        token: _otpCode,
+        type: OtpType.recovery,
+      );
       if (mounted) {
-        setState(() => _isLoading = false);
         Navigator.pushNamed(context, AppRoutes.resetPassword);
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Kode OTP salah atau kedaluwarsa.',
+              style: TextStyle(fontFamily: 'Inter'),
+            ),
+            backgroundColor: Color(0xFFD32F2F),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
-  void _handleResend() {
-    if (_canResend) {
+  Future<void> _handleResend() async {
+    if (_canResend && widget.email.isNotEmpty) {
       _startResendTimer();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Kode OTP baru telah dikirim',
-            style: TextStyle(fontFamily: 'Inter'),
-          ),
-          backgroundColor: Color(0xFF8B4A5F),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-        ),
-      );
+      try {
+        await Supabase.instance.client.auth.resetPasswordForEmail(widget.email);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Kode OTP baru telah dikirim',
+                style: TextStyle(fontFamily: 'Inter'),
+              ),
+              backgroundColor: Color(0xFF8B4A5F),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Gagal mengirim ulang OTP.',
+                style: TextStyle(fontFamily: 'Inter'),
+              ),
+              backgroundColor: Color(0xFFD32F2F),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 

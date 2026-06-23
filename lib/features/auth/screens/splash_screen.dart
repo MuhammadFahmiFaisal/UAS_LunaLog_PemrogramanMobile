@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -45,9 +46,22 @@ class _SplashScreenState extends State<SplashScreen>
     Future.delayed(const Duration(seconds: 3), () async {
       final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
+      
       final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+      final isPinEnabled = prefs.getBool('is_pin_enabled') ?? false;
+      final isBiometricEnabled = prefs.getBool('is_biometric_enabled') ?? false;
+
       if (!mounted) return;
-      if (hasSeenOnboarding) {
+
+      final session = Supabase.instance.client.auth.currentSession;
+
+      if (session != null) {
+        if (isPinEnabled || isBiometricEnabled) {
+          Navigator.pushReplacementNamed(context, AppRoutes.lockScreen);
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoutes.main);
+        }
+      } else if (hasSeenOnboarding) {
         Navigator.pushReplacementNamed(context, AppRoutes.login);
       } else {
         Navigator.pushReplacementNamed(context, AppRoutes.onboarding);

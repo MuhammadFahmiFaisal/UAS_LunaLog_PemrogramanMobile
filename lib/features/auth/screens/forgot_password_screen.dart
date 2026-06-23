@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/routes/app_routes.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -39,12 +40,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     super.dispose();
   }
 
-  void _handleSendOtp() {
+  Future<void> _handleSendOtp() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      Future.delayed(const Duration(seconds: 1), () {
+      try {
+        final email = _emailController.text.trim();
+        await Supabase.instance.client.auth.resetPasswordForEmail(email);
         if (mounted) {
-          setState(() => _isLoading = false);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
@@ -58,9 +60,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               ),
             ),
           );
-          Navigator.pushNamed(context, AppRoutes.otpVerification);
+          Navigator.pushNamed(context, AppRoutes.otpVerification, arguments: email);
         }
-      });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Gagal mengirim OTP: ${e.toString()}',
+                style: const TextStyle(fontFamily: 'Inter'),
+              ),
+              backgroundColor: const Color(0xFFD32F2F),
+              behavior: SnackBarBehavior.floating,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 

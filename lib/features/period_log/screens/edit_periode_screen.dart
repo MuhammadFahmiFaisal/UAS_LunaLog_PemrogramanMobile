@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/data/dummy_data.dart';
+import '../../../core/models/models.dart';
+import '../../../core/services/supabase_service.dart';
 
 class EditPeriodeScreen extends StatefulWidget {
   final String periodId;
@@ -16,33 +17,53 @@ class _EditPeriodeScreenState extends State<EditPeriodeScreen> {
   DateTime? _endDate;
   String? _selectedFlow;
   final TextEditingController _notesController = TextEditingController();
-  bool _isLoading = false;
+  bool _isLoading = true;
+  Period? _period;
 
   @override
   void initState() {
     super.initState();
-    final matchedPeriods = DummyData.periods.where((p) => p.id == widget.periodId).toList();
-    if (matchedPeriods.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    try {
+      final period = await SupabaseService.getPeriod(widget.periodId);
+      if (period == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Data periode tidak ditemukan'),
               behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-              ),
             ),
           );
           Navigator.pop(context);
         }
-      });
-      return;
+        return;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _period = period;
+          _startDate = period.startDate;
+          _endDate = period.endDate;
+          _selectedFlow = 'Ringan'; // In a real app, this might come from logs
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memuat: $e'),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-    final period = matchedPeriods.first;
-    _startDate = period.startDate;
-    _endDate = period.endDate;
-    _selectedFlow = 'Ringan';
   }
 
   @override
@@ -97,9 +118,6 @@ class _EditPeriodeScreenState extends State<EditPeriodeScreen> {
         const SnackBar(
           content: Text('Pilih tanggal mulai terlebih dahulu'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
         ),
       );
       return;
@@ -109,45 +127,68 @@ class _EditPeriodeScreenState extends State<EditPeriodeScreen> {
         const SnackBar(
           content: Text('Pilih volume darah terlebih dahulu'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
         ),
       );
       return;
     }
-    if (_endDate != null && _startDate != null && _endDate!.isBefore(_startDate!)) {
+    if (_endDate != null && _endDate!.isBefore(_startDate!)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tanggal akhir harus setelah tanggal mulai'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
         ),
       );
       return;
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+    
+    try {
+      final updatedPeriod = Period(
+        id: widget.periodId,
+        startDate: _startDate!,
+        endDate: _endDate,
+        durationDays: _endDate != null 
+            ? _endDate!.difference(_startDate!).inDays + 1 
+            : null,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Catatan periode berhasil diperbarui'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
-        ),
-      ),
-    );
-    Navigator.pop(context);
+      await SupabaseService.updatePeriod(widget.periodId, updatedPeriod);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Catatan periode berhasil diperbarui'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal menyimpan: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading && _period == null) {
+      return const Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(

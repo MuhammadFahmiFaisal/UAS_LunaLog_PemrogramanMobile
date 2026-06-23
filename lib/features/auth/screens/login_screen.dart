@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../shared/widgets/widgets.dart';
@@ -33,6 +34,27 @@ class _LoginScreenState extends State<LoginScreen>
       duration: const Duration(seconds: 6),
       vsync: this,
     )..repeat(reverse: true);
+
+    // Listener untuk menangkap redirect balik dari browser OAuth
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      if (!mounted) return;
+      final event = data.event;
+      if (event == AuthChangeEvent.signedIn) {
+        final prefs = await SharedPreferences.getInstance();
+        final hasCompletedSetup = prefs.getBool('hasCompletedSetup') ?? false;
+        if (!mounted) return;
+        if (hasCompletedSetup) {
+          final isPinEnabled = prefs.getBool('is_pin_enabled') ?? false;
+          if (isPinEnabled) {
+            Navigator.pushReplacementNamed(context, AppRoutes.lockScreen);
+          } else {
+            Navigator.pushReplacementNamed(context, AppRoutes.main);
+          }
+        } else {
+          Navigator.pushReplacementNamed(context, AppRoutes.onboardingSetup);
+        }
+      }
+    });
   }
 
   @override
@@ -47,29 +69,76 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return;
+      
+      try {
+        final authResponse = await Supabase.instance.client.auth.signInWithPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
 
-      final prefs = await SharedPreferences.getInstance();
-      if (!mounted) return;
-      final hasCompletedSetup = prefs.getBool('hasCompletedSetup') ?? false;
+        if (!mounted) return;
 
-      setState(() => _isLoading = false);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Login berhasil'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-        ),
-      );
-      if (hasCompletedSetup) {
-        Navigator.pushReplacementNamed(context, AppRoutes.main);
-      } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.onboardingSetup);
+        if (authResponse.user != null) {
+          final prefs = await SharedPreferences.getInstance();
+          final hasCompletedSetup = prefs.getBool('hasCompletedSetup') ?? false;
+
+          if (!mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login berhasil'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.green,
+            ),
+          );
+          
+          if (hasCompletedSetup) {
+            final isPinEnabled = prefs.getBool('is_pin_enabled') ?? false;
+            if (isPinEnabled) {
+              Navigator.pushReplacementNamed(context, AppRoutes.lockScreen);
+            } else {
+              Navigator.pushReplacementNamed(context, AppRoutes.main);
+            }
+          } else {
+            Navigator.pushReplacementNamed(context, AppRoutes.onboardingSetup);
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal login: email atau password salah'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _handleOAuthLogin(OAuthProvider provider) async {
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(
+        provider,
+        redirectTo: 'io.lunalog.app://login-callback',
+      );
+      // Navigasi ditangani oleh onAuthStateChange listener di initState
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal masuk: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -224,6 +293,7 @@ class _LoginScreenState extends State<LoginScreen>
                 Expanded(
                   child: SocialButton(
                     label: 'Google',
+                    onPressed: () => _handleOAuthLogin(OAuthProvider.google),
                     icon: SvgPicture.asset(
                       'assets/icons/google-logo.svg',
                       width: 20,
@@ -236,10 +306,11 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: SocialButton(
                     label: 'Facebook',
-                    icon: Icon(
+                    onPressed: () => _handleOAuthLogin(OAuthProvider.facebook),
+                    icon: const Icon(
                       Icons.facebook,
                       size: 20,
                       color: Color(0xFF8B4A5F),

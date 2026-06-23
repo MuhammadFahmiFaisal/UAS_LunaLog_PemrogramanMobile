@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../shared/widgets/widgets.dart';
 
@@ -36,6 +37,16 @@ class _RegisterScreenState extends State<RegisterScreen>
       duration: const Duration(seconds: 6),
       vsync: this,
     )..repeat(reverse: true);
+
+    // Listener untuk menangkap redirect balik dari browser OAuth
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      if (!mounted) return;
+      final event = data.event;
+      if (event == AuthChangeEvent.signedIn) {
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, AppRoutes.main);
+      }
+    });
   }
 
   @override
@@ -52,20 +63,71 @@ class _RegisterScreenState extends State<RegisterScreen>
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registrasi berhasil'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-        ),
+      
+      try {
+        final authResponse = await Supabase.instance.client.auth.signUp(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+          data: {
+            'name': _nameController.text.trim(),
+          },
+        );
+
+        if (!mounted) return;
+
+        if (authResponse.user != null) {
+          // Buat profil user baru di tabel user_profiles
+          await Supabase.instance.client.from('user_profiles').insert({
+            'id': authResponse.user!.id,
+            'name': _nameController.text.trim(),
+            'email': _emailController.text.trim(),
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registrasi berhasil'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pushReplacementNamed(context, AppRoutes.main);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Gagal mendaftar: $e'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleOAuthLogin(OAuthProvider provider) async {
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(
+        provider,
+        redirectTo: 'io.lunalog.app://login-callback',
       );
-      Navigator.pushReplacementNamed(context, AppRoutes.main);
+      // Navigasi ditangani oleh onAuthStateChange listener di initState
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mendaftar: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -230,6 +292,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                 Expanded(
                   child: SocialButton(
                     label: 'Google',
+                    onPressed: () => _handleOAuthLogin(OAuthProvider.google),
                     icon: SvgPicture.asset(
                       'assets/icons/google-logo.svg',
                       width: 20,
@@ -242,10 +305,11 @@ class _RegisterScreenState extends State<RegisterScreen>
                   ),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: SocialButton(
                     label: 'Facebook',
-                    icon: Icon(
+                    onPressed: () => _handleOAuthLogin(OAuthProvider.facebook),
+                    icon: const Icon(
                       Icons.facebook,
                       size: 20,
                       color: Color(0xFF8B4A5F),

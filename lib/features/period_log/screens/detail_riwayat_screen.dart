@@ -1,20 +1,35 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/data/dummy_data.dart';
 import '../../../core/models/models.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/services/supabase_service.dart';
 
-class DetailRiwayatScreen extends StatelessWidget {
+class DetailRiwayatScreen extends StatefulWidget {
   final String periodId;
 
   const DetailRiwayatScreen({super.key, required this.periodId});
 
   @override
-  Widget build(BuildContext context) {
-    final matchedPeriods = DummyData.periods.where((p) => p.id == periodId).toList();
-    if (matchedPeriods.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) {
+  State<DetailRiwayatScreen> createState() => _DetailRiwayatScreenState();
+}
+
+class _DetailRiwayatScreenState extends State<DetailRiwayatScreen> {
+  Period? _period;
+  List<DailyLog> _logs = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    try {
+      final period = await SupabaseService.getPeriod(widget.periodId);
+      if (period == null) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Data periode tidak ditemukan'),
@@ -26,12 +41,51 @@ class DetailRiwayatScreen extends StatelessWidget {
           );
           Navigator.pop(context);
         }
-      });
+        return;
+      }
+
+      final profile = await SupabaseService.getUserProfile();
+      List<DailyLog> logs = [];
+      if (profile != null) {
+        logs = await SupabaseService.getDailyLogsByDateRange(
+          period.startDate,
+          period.endDate,
+        );
+      }
+
+      if (mounted) {
+        setState(() {
+          _period = period;
+          _logs = logs;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Terjadi kesalahan: $e'),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.background,
+        body: Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+      );
+    }
+
+    if (_period == null) {
       return const Scaffold(body: SizedBox());
     }
-    final period = matchedPeriods.first;
-
-    final logs = DummyData.recentLogs;
 
     return Scaffold(
       backgroundColor: AppTheme.background,
@@ -45,10 +99,10 @@ class DetailRiwayatScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  _buildSummaryCard(period),
+                  _buildSummaryCard(_period!),
                   const SizedBox(height: 24),
-                  _buildDailyLogsSection(logs),
-                  const SizedBox(height: 24),
+                  if (_logs.isNotEmpty) _buildDailyLogsSection(_logs),
+                  if (_logs.isNotEmpty) const SizedBox(height: 24),
                   _buildDecoration(),
                   const SizedBox(height: 100),
                 ],
@@ -97,9 +151,9 @@ class DetailRiwayatScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSummaryCard(dynamic period) {
-    final duration = period.durationDays ?? 5;
-    final progress = duration / 7;
+  Widget _buildSummaryCard(Period period) {
+    final duration = period.durationDays ?? period.dayCount;
+    final progress = duration > 0 ? (duration / 7).clamp(0.0, 1.0) : 0.0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -137,7 +191,7 @@ class DetailRiwayatScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${period.startDate.day} - ${period.endDate?.day ?? period.startDate.day} ${_monthName(period.startDate.month)}',
+                      '${period.startDate.day} - ${period.endDate?.day ?? '?'} ${_monthName(period.startDate.month)}',
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
@@ -192,7 +246,7 @@ class DetailRiwayatScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Durasi: $duration Hari',
+                    duration > 0 ? 'Durasi: $duration Hari' : 'Durasi: Belum selesai',
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 12,
@@ -246,6 +300,7 @@ class DetailRiwayatScreen extends StatelessWidget {
       FlowLevel.light: 'Ringan',
       FlowLevel.medium: 'Sedang',
       FlowLevel.heavy: 'Deras',
+      FlowLevel.none: 'Tidak ada',
     };
 
     const dayNames = [
@@ -424,8 +479,8 @@ class DetailRiwayatScreen extends StatelessWidget {
                 Navigator.pushNamed(
                   context,
                   AppRoutes.editPeriode,
-                  arguments: periodId,
-                );
+                  arguments: widget.periodId,
+                ).then((_) => _loadData()); // Refresh on return
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppTheme.primary,
@@ -491,7 +546,7 @@ class DetailRiwayatScreen extends StatelessWidget {
   void _showDeleteConfirmation(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
@@ -514,7 +569,7 @@ class DetailRiwayatScreen extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(ctx),
             child: const Text(
               'Batal',
               style: TextStyle(
@@ -526,9 +581,33 @@ class DetailRiwayatScreen extends StatelessWidget {
             ),
           ),
           TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
+            onPressed: () async {
+              Navigator.pop(ctx);
+              setState(() => _isLoading = true);
+              try {
+                await SupabaseService.deletePeriod(widget.periodId);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Riwayat berhasil dihapus'),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  Navigator.pop(context); // Go back to history list
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Gagal menghapus: $e'),
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                  setState(() => _isLoading = false);
+                }
+              }
             },
             child: const Text(
               'Hapus',
@@ -553,3 +632,4 @@ class DetailRiwayatScreen extends StatelessWidget {
     return months[month];
   }
 }
+

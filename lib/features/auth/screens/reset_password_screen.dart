@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/routes/app_routes.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -47,24 +48,41 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
   Future<void> _handleReset() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      await Future.delayed(const Duration(seconds: 1));
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password berhasil diubah'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
+      try {
+        final newPassword = _passwordController.text.trim();
+        await Supabase.instance.client.auth.updateUser(
+          UserAttributes(password: newPassword),
+        );
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password berhasil diubah'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
           ),
-        ),
-      );
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRoutes.passwordResetSuccess,
-        (route) => false,
-      );
+        );
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.passwordResetSuccess,
+          (route) => false,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengubah password: ${e.toString()}'),
+            backgroundColor: const Color(0xFFD32F2F),
+            behavior: SnackBarBehavior.floating,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+            ),
+          ),
+        );
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
     }
   }
 

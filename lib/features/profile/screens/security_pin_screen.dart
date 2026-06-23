@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:local_auth/local_auth.dart';
 import '../../../core/theme/app_theme.dart';
 
 class SecurityPinScreen extends StatefulWidget {
@@ -14,6 +16,21 @@ class _SecurityPinScreenState extends State<SecurityPinScreen> {
   String _autoLockTimeout = '5 menit';
   final TextEditingController _pinController = TextEditingController();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _pinEnabled = prefs.getBool('is_pin_enabled') ?? false;
+      _pinController.text = prefs.getString('security_pin') ?? '';
+      _biometricEnabled = prefs.getBool('is_biometric_enabled') ?? false;
+    });
+  }
 
   @override
   void dispose() {
@@ -36,7 +53,16 @@ class _SecurityPinScreenState extends State<SecurityPinScreen> {
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
+    
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_pin_enabled', _pinEnabled);
+    await prefs.setBool('is_biometric_enabled', _biometricEnabled);
+    if (_pinEnabled) {
+      await prefs.setString('security_pin', _pinController.text);
+    } else {
+      await prefs.remove('security_pin');
+    }
+
     if (!mounted) return;
     setState(() => _isLoading = false);
 
@@ -322,7 +348,19 @@ class _SecurityPinScreenState extends State<SecurityPinScreen> {
           ),
           Switch(
             value: _biometricEnabled,
-            onChanged: (value) {
+            onChanged: (value) async {
+              if (value) {
+                final LocalAuthentication auth = LocalAuthentication();
+                final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
+                final bool canAuthenticate = canAuthenticateWithBiometrics || await auth.isDeviceSupported();
+                if (!canAuthenticate) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Perangkat tidak mendukung biometrik.')),
+                  );
+                  return;
+                }
+              }
               setState(() => _biometricEnabled = value);
             },
             activeThumbColor: Colors.white,

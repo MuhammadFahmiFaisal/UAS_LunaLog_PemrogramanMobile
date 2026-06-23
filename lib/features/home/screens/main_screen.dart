@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
 import 'home_screen.dart';
 import '../../period_log/screens/history_screen.dart';
-import '../../health_tips/screens/tips_list_screen.dart';
+import '../../health_tips/screens/pusat_edukasi_screen.dart';
 import '../../profile/screens/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const HomeScreen(),
     const HistoryScreen(),
-    const TipsListScreen(),
+    const PusatEdukasiScreen(),
     const ProfileScreen(),
   ];
 
@@ -73,7 +73,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 _buildNavItem(
                   index: 2,
-                  icon: Icons.group_outlined,
+                  icon: Icons.lightbulb_outline,
                   label: 'Tips',
                 ),
                 _buildNavItem(

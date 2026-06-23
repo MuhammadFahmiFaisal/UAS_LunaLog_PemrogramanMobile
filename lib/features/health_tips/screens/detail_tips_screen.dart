@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/models/models.dart';
 
 class DetailTipsScreen extends StatelessWidget {
-  const DetailTipsScreen({super.key});
+  final Article? article;
+  const DetailTipsScreen({super.key, this.article});
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +47,9 @@ class DetailTipsScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.arrow_back, color: AppTheme.primary),
             ),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Tips Kesehatan',
+                article?.category ?? 'Tips Kesehatan',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 20,
@@ -69,36 +72,56 @@ class DetailTipsScreen extends StatelessWidget {
       constraints: const BoxConstraints(maxHeight: 280),
       child: AspectRatio(
         aspectRatio: 16 / 10,
-        child: Image.network(
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuAahMCqsUOYWipIzQZ35uweZT0si_-Qt4snylr9Jbj1laxv7RdgmsMLAW7u13xa2hSYceO2Uq-l-sm58eRMW_36d3jcMfU2TxHaqKrFGQp-0tAAyHuVh7dC7WwvptUiqS1xI1LTB1yhHugpk9U87_-LuvkjLPLWCCpJ259n3btpPgUJhIN0mn19cbZTQsbvGXGOOKZW_AXAJaamE97AmiDP3k6FAmRdCslRo06LMQbaL-vCjo7JrJSW2qYb7nGq4H3hmimUBkbFuw',
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.primaryContainer,
-                    AppTheme.primary,
-                  ],
-                ),
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.self_improvement,
-                  color: Colors.white,
-                  size: 64,
-                ),
-              ),
-            );
-          },
+        child: article?.imageUrl != null
+            ? Image.network(
+                article!.imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+              )
+            : _buildPlaceholder(),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryContainer,
+            AppTheme.primary,
+          ],
+        ),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.self_improvement,
+          color: Colors.white,
+          size: 64,
         ),
       ),
     );
   }
 
   Widget _buildArticleContent() {
+    if (article == null) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+        child: Center(
+          child: Text(
+            'Data artikel tidak tersedia.',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              color: AppTheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -107,9 +130,9 @@ class DetailTipsScreen extends StatelessWidget {
           const SizedBox(height: 24),
           _buildCategoryAndReadTime(),
           const SizedBox(height: 16),
-          const Text(
-            'Cara Mengurangi Kram Menstruasi',
-            style: TextStyle(
+          Text(
+            article!.title,
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 28,
               fontWeight: FontWeight.w600,
@@ -119,9 +142,9 @@ class DetailTipsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
-            'Kram menstruasi, atau dismenore, adalah rasa sakit yang dialami banyak wanita sebelum atau selama masa menstruasi. Hal ini terjadi karena kontraksi pada rahim yang dipicu oleh hormon prostaglandin. Rasa nyeri ini bisa sangat mengganggu aktivitas, namun ada beberapa cara alami yang bisa membantu menenangkan tubuh Anda.',
-            style: TextStyle(
+          Text(
+            article!.content,
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontSize: 16,
               fontWeight: FontWeight.w400,
@@ -130,29 +153,37 @@ class DetailTipsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          _buildTipCard(
-            icon: Icons.thermostat,
-            title: 'Kompres Hangat',
-            description: 'Mengaplikasikan bantal pemanas atau botol air hangat ke perut bagian bawah dan punggung bawah dapat membantu merilekskan otot-otot rahim yang berkontraksi. Rasa hangat meningkatkan aliran darah dan mengurangi ketegangan saraf penyebab nyeri.',
-          ),
-          const SizedBox(height: 16),
-          _buildTipCard(
-            icon: Icons.coffee,
-            title: 'Minum Jahe Hangat',
-            description: 'Jahe memiliki sifat anti-inflamasi alami yang bekerja serupa dengan obat pereda nyeri komersial. Secangkir teh jahe hangat dapat membantu menurunkan kadar prostaglandin yang menyebabkan rasa sakit dan mual saat menstruasi.',
-          ),
-          const SizedBox(height: 16),
-          _buildTipCard(
-            icon: Icons.self_improvement,
-            title: 'Posisi Yoga',
-            description: "Gerakan ringan seperti 'Child's Pose' atau 'Cat-Cow' sangat efektif untuk meregangkan panggul dan melepaskan ketegangan di punggung bawah. Fokuslah pada pernapasan perut yang dalam untuk memberikan sinyal relaksasi pada sistem saraf Anda.",
-          ),
+          if (article!.tips.isNotEmpty)
+            ...article!.tips.map((tip) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: _buildTipCard(
+                  icon: _getIconForTip(tip.icon),
+                  title: tip.title,
+                  description: tip.description,
+                ),
+              );
+            }),
           const SizedBox(height: 32),
           _buildCTASection(),
           const SizedBox(height: 32),
         ],
       ),
     );
+  }
+
+  IconData _getIconForTip(String? iconName) {
+    if (iconName == null) return Icons.lightbulb_outline;
+    switch (iconName.toLowerCase()) {
+      case 'thermostat':
+        return Icons.thermostat;
+      case 'coffee':
+        return Icons.coffee;
+      case 'self_improvement':
+        return Icons.self_improvement;
+      default:
+        return Icons.lightbulb_outline;
+    }
   }
 
   Widget _buildCategoryAndReadTime() {
@@ -164,8 +195,8 @@ class DetailTipsScreen extends StatelessWidget {
             color: AppTheme.primaryContainer.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: const Text(
-            'Kesehatan Fisik',
+          child: Text(
+            article?.category ?? 'Kesehatan Fisik',
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 12,
@@ -175,7 +206,7 @@ class DetailTipsScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        const Row(
+        Row(
           children: [
             Icon(
               Icons.schedule,
@@ -184,7 +215,7 @@ class DetailTipsScreen extends StatelessWidget {
             ),
             SizedBox(width: 4),
             Text(
-              '5 menit baca',
+              '${article?.readTimeMinutes ?? 5} menit baca',
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 12,
@@ -322,7 +353,19 @@ class DetailTipsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  if (article != null) {
+                    final String title = article!.title;
+                    final String content = article!.content;
+                    final String tipsText = article!.tips.isNotEmpty
+                        ? '\n\nTips:\n${article!.tips.map((t) => '• ${t.title}: ${t.description}').join('\n')}'
+                        : '';
+                    Share.share(
+                      '$title\n\n$content$tipsText\n\nDibagikan via LunaLog',
+                      subject: title,
+                    );
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.surfaceWhite,
                   foregroundColor: AppTheme.primary,

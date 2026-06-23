@@ -100,5 +100,10 @@ uas_lunalog_pemrogramanmobile/
 1. Pastikan **Flutter SDK** sudah terpasang di komputer Anda.
 2. Lakukan `clone` repositori ini ke komputer lokal.
 3. Buka terminal di direktori proyek dan jalankan `flutter pub get` untuk mengunduh semua dependensi paket.
-4. Hubungkan emulator atau *smartphone* fisik (Android/iOS).
-5. Jalankan aplikasi dengan perintah `flutter run`.
+4. Salin file `.env.example` menjadi `.env` di direktori utama:
+   ```bash
+   cp .env.example .env
+   ```
+   Lalu, isi nilai `SUPABASE_URL` dan `SUPABASE_ANON_KEY` sesuai dengan proyek Supabase Anda.
+5. Hubungkan emulator atau *smartphone* fisik (Android/iOS).
+6. Jalankan aplikasi dengan perintah `flutter run`.

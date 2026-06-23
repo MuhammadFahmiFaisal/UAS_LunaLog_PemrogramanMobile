@@ -45,7 +45,7 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

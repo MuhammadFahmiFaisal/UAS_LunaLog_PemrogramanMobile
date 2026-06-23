@@ -1,6 +1,7 @@
 # Miscellaneous
 *.class
 *.log
+analyze_log.txt
 *.pyc
 *.swp
 .DS_Store
@@ -52,5 +53,4 @@ app.*.map.json
 
 # Secrets
 opencode.json
-
-opencode.json
+.env

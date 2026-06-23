@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/models/models.dart';
+import '../../../core/services/supabase_service.dart';
 
 class LogHarianScreen extends StatefulWidget {
   const LogHarianScreen({super.key});
@@ -37,6 +39,28 @@ class _LogHarianScreenState extends State<LogHarianScreen> {
     {'key': 'sedih', 'emoji': '😢', 'label': 'Sedih'},
   ];
 
+  // Mapping string UI → enum FlowLevel
+  FlowLevel _mapFlow(String? flow) {
+    switch (flow) {
+      case 'Ringan': return FlowLevel.light;
+      case 'Sedang': return FlowLevel.medium;
+      case 'Deras':
+      case 'Sangat Deras': return FlowLevel.heavy;
+      default: return FlowLevel.none;
+    }
+  }
+
+  // Mapping string UI → enum Mood
+  Mood? _mapMood(String? mood) {
+    switch (mood) {
+      case 'tenang': return Mood.calm;
+      case 'senang': return Mood.happy;
+      case 'cemas': return Mood.anxious;
+      case 'sedih': return Mood.sad;
+      default: return null;
+    }
+  }
+
   @override
   void dispose() {
     _notesController.dispose();
@@ -72,26 +96,105 @@ class _LogHarianScreenState extends State<LogHarianScreen> {
     }
 
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
+    try {
+      final profile = await SupabaseService.getUserProfile();
+      if (profile == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sesi habis, silakan login kembali'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
 
-    setState(() => _isLoading = false);
+      final log = DailyLog(
+        id: '',
+        date: DateTime.now(),
+        flow: _mapFlow(_selectedFlow),
+        symptoms: _selectedSymptoms.toList(),
+        mood: _mapMood(_selectedMood),
+        sexualActivity: _isSexualActive,
+        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text(
-          'Log harian berhasil disimpan',
-          style: TextStyle(fontFamily: 'Inter'),
+      await SupabaseService.addDailyLog(log);
+
+      if (!mounted) return;
+
+      // Sistem Trigger Gejala -> Tips Solusi
+      String? tipMessage;
+      if (_selectedSymptoms.contains('kram')) {
+        tipMessage = '💡 Tips: Minum air hangat atau tempelkan kompres perut untuk meredakan kram parah.';
+      } else if (_selectedSymptoms.contains('pusing')) {
+        tipMessage = '💡 Tips: Pastikan Anda istirahat cukup dan tetap terhidrasi hari ini.';
+      }
+
+      if (tipMessage != null) {
+        // Tampilkan dialog khusus
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              'Catatan Tersimpan',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primary,
+              ),
+            ),
+            content: Text(
+              tipMessage!,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 15,
+                height: 1.4,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Oke, Terima Kasih', style: TextStyle(color: AppTheme.primary)),
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Log harian berhasil disimpan',
+              style: TextStyle(fontFamily: 'Inter'),
+            ),
+            backgroundColor: AppTheme.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+      
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal menyimpan: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
         ),
-        backgroundColor: AppTheme.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
-
-    Navigator.pop(context);
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
