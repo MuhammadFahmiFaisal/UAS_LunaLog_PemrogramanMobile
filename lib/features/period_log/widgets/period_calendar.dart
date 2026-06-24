@@ -132,7 +132,10 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
               );
             });
           },
-          icon: const Icon(Icons.chevron_left, color: AppTheme.onSurfaceVariant),
+          icon: const Icon(
+            Icons.chevron_left,
+            color: AppTheme.onSurfaceVariant,
+          ),
         ),
         Text(
           _getMonthName(_currentMonth.month),
@@ -152,7 +155,10 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
               );
             });
           },
-          icon: const Icon(Icons.chevron_right, color: AppTheme.onSurfaceVariant),
+          icon: const Icon(
+            Icons.chevron_right,
+            color: AppTheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -192,7 +198,7 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
     ).weekday;
 
     final days = <Widget>[];
-    
+
     // Previous month padding
     final prevMonth = DateTime(_currentMonth.year, _currentMonth.month, 0);
     for (int i = firstDayWeekday - 1; i > 0; i--) {
@@ -221,7 +227,9 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
       final isPeriodDay = _periodDayMap[dateKey] ?? false;
       final isFertileDay = _fertileDayMap[dateKey] ?? false;
       final isPmsDay = _pmsDayMap[dateKey] ?? false;
-      days.add(_buildDayCell(day, isPeriodDay, isFertileDay, isPmsDay, cellWidth));
+      days.add(
+        _buildDayCell(day, isPeriodDay, isFertileDay, isPmsDay, cellWidth),
+      );
     }
 
     // Next month padding
@@ -246,14 +254,16 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
       );
     }
 
-    return Wrap(
-      spacing: 0,
-      runSpacing: 12,
-      children: days,
-    );
+    return Wrap(spacing: 0, runSpacing: 12, children: days);
   }
 
-  Widget _buildDayCell(int day, bool isPeriodDay, bool isFertileDay, bool isPmsDay, double cellWidth) {
+  Widget _buildDayCell(
+    int day,
+    bool isPeriodDay,
+    bool isFertileDay,
+    bool isPmsDay,
+    double cellWidth,
+  ) {
     Color? bgColor;
     Color textColor = AppTheme.onSurface;
     bool isBold = false;
@@ -279,10 +289,7 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
       child: Container(
         width: cellWidth,
         height: 36,
-        decoration: BoxDecoration(
-          color: bgColor,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
         child: Center(
           child: Text(
             '$day',
@@ -311,7 +318,10 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
         children: [
           _buildLegendItem(color: AppTheme.statusHeavy, label: 'Haid'),
           const SizedBox(width: 24),
-          _buildLegendItem(color: AppTheme.calendarFertile, label: 'Masa Subur'),
+          _buildLegendItem(
+            color: AppTheme.calendarFertile,
+            label: 'Masa Subur',
+          ),
           const SizedBox(width: 24),
           _buildLegendItem(color: AppTheme.calendarPms, label: 'PMS'),
         ],
@@ -325,10 +335,7 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
         Container(
           width: 12,
           height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
         Text(
@@ -346,8 +353,18 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
 
   String _getMonthName(int month) {
     final months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
     return '${months[month - 1]} ${_currentMonth.year}';
   }

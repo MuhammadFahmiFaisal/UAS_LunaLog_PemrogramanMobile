@@ -24,9 +24,9 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
   bool _isSaving = false;
 
   UserProfile? _profile;
-  File? _pickedImageFile;      // file lokal yang baru dipilih user
-  XFile? _pickedXFile;        // XFile for web-compatible preview
-  String? _currentAvatarUrl;  // URL dari Supabase (sudah ada)
+  File? _pickedImageFile; // file lokal yang baru dipilih user
+  XFile? _pickedXFile; // XFile for web-compatible preview
+  String? _currentAvatarUrl; // URL dari Supabase (sudah ada)
 
   @override
   void initState() {
@@ -84,13 +84,20 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
             const SizedBox(height: 16),
             if (!kIsWeb)
               ListTile(
-                leading: const Icon(Icons.photo_camera, color: AppTheme.primary),
-                title: const Text('Ambil dari Kamera',
-                    style: TextStyle(fontFamily: 'Inter')),
+                leading: const Icon(
+                  Icons.photo_camera,
+                  color: AppTheme.primary,
+                ),
+                title: const Text(
+                  'Ambil dari Kamera',
+                  style: TextStyle(fontFamily: 'Inter'),
+                ),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  final picked =
-                      await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+                  final picked = await picker.pickImage(
+                    source: ImageSource.camera,
+                    imageQuality: 80,
+                  );
                   if (picked != null && mounted) {
                     setState(() {
                       _pickedXFile = picked;
@@ -101,12 +108,16 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
               ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: AppTheme.primary),
-              title: const Text('Pilih dari Galeri',
-                  style: TextStyle(fontFamily: 'Inter')),
+              title: const Text(
+                'Pilih dari Galeri',
+                style: TextStyle(fontFamily: 'Inter'),
+              ),
               onTap: () async {
                 Navigator.pop(ctx);
-                final picked =
-                    await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+                final picked = await picker.pickImage(
+                  source: ImageSource.gallery,
+                  imageQuality: 80,
+                );
                 if (picked != null && mounted) {
                   setState(() {
                     _pickedXFile = picked;
@@ -137,7 +148,10 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
         if (kIsWeb) {
           // On web, read bytes and upload directly
           final bytes = await _pickedXFile!.readAsBytes();
-          avatarUrl = await SupabaseService.uploadAvatarBytes(bytes, _pickedXFile!.name);
+          avatarUrl = await SupabaseService.uploadAvatarBytes(
+            bytes,
+            _pickedXFile!.name,
+          );
         } else {
           avatarUrl = await SupabaseService.uploadAvatar(_pickedImageFile!);
         }
@@ -181,7 +195,8 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
       body: SafeArea(
         child: _isLoading
             ? const Center(
-                child: CircularProgressIndicator(color: AppTheme.primary))
+                child: CircularProgressIndicator(color: AppTheme.primary),
+              )
             : Column(
                 children: [
                   _buildHeader(),
@@ -267,16 +282,20 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                   child: _pickedXFile != null
                       // Show newly picked image (web-compatible)
                       ? (kIsWeb
-                          ? Image.network(_pickedXFile!.path, fit: BoxFit.cover)
-                          : Image.file(_pickedImageFile!, fit: BoxFit.cover))
+                            ? Image.network(
+                                _pickedXFile!.path,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.file(_pickedImageFile!, fit: BoxFit.cover))
                       // Show existing avatar from Supabase or fallback
-                      : (_currentAvatarUrl != null && _currentAvatarUrl!.isNotEmpty
-                          ? Image.network(
-                              _currentAvatarUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, _, _) => _avatarFallback(),
-                            )
-                          : _avatarFallback()),
+                      : (_currentAvatarUrl != null &&
+                                _currentAvatarUrl!.isNotEmpty
+                            ? Image.network(
+                                _currentAvatarUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => _avatarFallback(),
+                              )
+                            : _avatarFallback()),
                 ),
               ),
               Positioned(
@@ -291,7 +310,11 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                       BorderSide(color: Colors.white, width: 2),
                     ),
                   ),
-                  child: const Icon(Icons.photo_camera, size: 14, color: Colors.white),
+                  child: const Icon(
+                    Icons.photo_camera,
+                    size: 14,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ],
@@ -323,7 +346,11 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
   Widget _avatarFallback() {
     return Container(
       color: AppTheme.surfaceContainerHighest,
-      child: const Icon(Icons.person, size: 56, color: AppTheme.onSurfaceVariant),
+      child: const Icon(
+        Icons.person,
+        size: 56,
+        color: AppTheme.onSurfaceVariant,
+      ),
     );
   }
 
@@ -398,7 +425,10 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: AppTheme.primary, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
           style: const TextStyle(
             fontFamily: 'Inter',
@@ -445,9 +475,14 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
             ),
             disabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppTheme.outlineVariant.withValues(alpha: 0.3)),
+              borderSide: BorderSide(
+                color: AppTheme.outlineVariant.withValues(alpha: 0.3),
+              ),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
           style: TextStyle(
             fontFamily: 'Inter',
@@ -466,7 +501,11 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
         color: AppTheme.surfaceWhite,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(color: Color(0x0F8B4A5F), blurRadius: 12, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Color(0x0F8B4A5F),
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -495,8 +534,12 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                   label: 'Panjang Siklus',
                   value: _cycleLength,
                   unit: 'Hari',
-                  onDecrement: () => setState(() { if (_cycleLength > 21) _cycleLength--; }),
-                  onIncrement: () => setState(() { if (_cycleLength < 45) _cycleLength++; }),
+                  onDecrement: () => setState(() {
+                    if (_cycleLength > 21) _cycleLength--;
+                  }),
+                  onIncrement: () => setState(() {
+                    if (_cycleLength < 45) _cycleLength++;
+                  }),
                 ),
               ),
               const SizedBox(width: 12),
@@ -505,8 +548,12 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                   label: 'Durasi Haid',
                   value: _periodLength,
                   unit: 'Hari',
-                  onDecrement: () => setState(() { if (_periodLength > 1) _periodLength--; }),
-                  onIncrement: () => setState(() { if (_periodLength < 10) _periodLength++; }),
+                  onDecrement: () => setState(() {
+                    if (_periodLength > 1) _periodLength--;
+                  }),
+                  onIncrement: () => setState(() {
+                    if (_periodLength < 10) _periodLength++;
+                  }),
                 ),
               ),
             ],
@@ -515,7 +562,9 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
           Container(
             padding: const EdgeInsets.only(top: 16),
             decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: AppTheme.outlineVariant, width: 0.5)),
+              border: Border(
+                top: BorderSide(color: AppTheme.outlineVariant, width: 0.5),
+              ),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -526,7 +575,11 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                     children: [
                       const Text(
                         'Prediksi Siklus Berikutnya',
-                        style: TextStyle(fontFamily: 'Inter', fontSize: 16, color: AppTheme.onSurface),
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 16,
+                          color: AppTheme.onSurface,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -534,7 +587,9 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
-                          color: AppTheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          color: AppTheme.onSurfaceVariant.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                       ),
                     ],
@@ -566,14 +621,18 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
       decoration: BoxDecoration(
         color: AppTheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.outlineVariant.withValues(alpha: 0.3)),
+        border: Border.all(
+          color: AppTheme.outlineVariant.withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         children: [
           Text(
             label,
             style: const TextStyle(
-              fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.w500,
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
               color: AppTheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
@@ -585,36 +644,57 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
               GestureDetector(
                 onTap: onDecrement,
                 child: Container(
-                  width: 32, height: 32,
+                  width: 32,
+                  height: 32,
                   decoration: const BoxDecoration(
-                    color: AppTheme.secondaryContainer, shape: BoxShape.circle,
+                    color: AppTheme.secondaryContainer,
+                    shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.remove, color: AppTheme.primary, size: 18),
+                  child: const Icon(
+                    Icons.remove,
+                    color: AppTheme.primary,
+                    size: 18,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
               Text(
                 '$value',
                 style: const TextStyle(
-                  fontFamily: 'Inter', fontSize: 28,
-                  fontWeight: FontWeight.w600, color: AppTheme.primary,
+                  fontFamily: 'Inter',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primary,
                 ),
               ),
               const SizedBox(width: 16),
               GestureDetector(
                 onTap: onIncrement,
                 child: Container(
-                  width: 32, height: 32,
+                  width: 32,
+                  height: 32,
                   decoration: const BoxDecoration(
-                    color: AppTheme.secondaryContainer, shape: BoxShape.circle,
+                    color: AppTheme.secondaryContainer,
+                    shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.add, color: AppTheme.primary, size: 18),
+                  child: const Icon(
+                    Icons.add,
+                    color: AppTheme.primary,
+                    size: 18,
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(unit, style: const TextStyle(fontFamily: 'Inter', fontSize: 11, color: AppTheme.onSurfaceVariant)),
+          Text(
+            unit,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11,
+              color: AppTheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -631,17 +711,27 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primary,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
               elevation: 4,
             ),
             child: _isSaving
                 ? const SizedBox(
-                    width: 24, height: 24,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   )
                 : const Text(
                     'Simpan Perubahan',
-                    style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
           ),
         ),
@@ -653,11 +743,17 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
             onPressed: () => Navigator.pop(context),
             style: TextButton.styleFrom(
               foregroundColor: AppTheme.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
             ),
             child: const Text(
               'Batal',
-              style: TextStyle(fontFamily: 'Inter', fontSize: 16, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),

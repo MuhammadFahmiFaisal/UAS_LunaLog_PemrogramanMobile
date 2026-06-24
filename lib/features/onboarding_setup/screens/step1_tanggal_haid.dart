@@ -26,7 +26,8 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
   @override
   void didUpdateWidget(covariant Step1TanggalHaid oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedDate != null && widget.selectedDate != oldWidget.selectedDate) {
+    if (widget.selectedDate != null &&
+        widget.selectedDate != oldWidget.selectedDate) {
       _focusedMonth = widget.selectedDate!;
     }
   }
@@ -181,11 +182,7 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
           shape: BoxShape.circle,
           color: const Color(0xFFFFF0F1),
         ),
-        child: Icon(
-          icon,
-          color: const Color(0xFF524346),
-          size: 24,
-        ),
+        child: Icon(icon, color: const Color(0xFF524346), size: 24),
       ),
     );
   }
@@ -198,7 +195,11 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
     final days = <Widget>[];
 
     // Previous month days
-    final prevMonthLastDay = DateTime(_focusedMonth.year, _focusedMonth.month, 0).day;
+    final prevMonthLastDay = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month,
+      0,
+    ).day;
     for (int i = firstWeekday - 1; i > 0; i--) {
       final day = prevMonthLastDay - i + 1;
       days.add(_buildDayCell(day, cellWidth: cellWidth, isCurrentMonth: false));
@@ -207,22 +208,26 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
     // Current month days
     for (int day = 1; day <= lastDay.day; day++) {
       final date = DateTime(_focusedMonth.year, _focusedMonth.month, day);
-      final isSelected = widget.selectedDate != null &&
+      final isSelected =
+          widget.selectedDate != null &&
           date.year == widget.selectedDate!.year &&
           date.month == widget.selectedDate!.month &&
           date.day == widget.selectedDate!.day;
-      final isToday = DateTime.now().year == date.year &&
+      final isToday =
+          DateTime.now().year == date.year &&
           DateTime.now().month == date.month &&
           DateTime.now().day == date.day;
 
-      days.add(_buildDayCell(
-        day,
-        cellWidth: cellWidth,
-        isCurrentMonth: true,
-        isSelected: isSelected,
-        isToday: isToday,
-        onTap: () => widget.onDateSelected(date),
-      ));
+      days.add(
+        _buildDayCell(
+          day,
+          cellWidth: cellWidth,
+          isCurrentMonth: true,
+          isSelected: isSelected,
+          isToday: isToday,
+          onTap: () => widget.onDateSelected(date),
+        ),
+      );
     }
 
     // Next month days to fill 6 rows
@@ -231,9 +236,7 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
       days.add(_buildDayCell(day, cellWidth: cellWidth, isCurrentMonth: false));
     }
 
-    return Wrap(
-      children: days,
-    );
+    return Wrap(children: days);
   }
 
   Widget _buildDayCell(
@@ -267,12 +270,14 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
                 style: TextStyle(
                   fontFamily: 'Inter',
                   fontSize: 14,
-                  fontWeight: isToday || isSelected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: isToday || isSelected
+                      ? FontWeight.w600
+                      : FontWeight.w400,
                   color: isSelected
                       ? Colors.white
                       : isCurrentMonth
-                          ? const Color(0xFF311119)
-                          : const Color(0xFFD6C1C5),
+                      ? const Color(0xFF311119)
+                      : const Color(0xFFD6C1C5),
                 ),
               ),
             ),
@@ -321,8 +326,18 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
 
   String _getMonthName(int month) {
     const names = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
     return names[month - 1];
   }

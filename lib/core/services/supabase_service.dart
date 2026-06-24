@@ -67,21 +67,26 @@ class SupabaseService {
   }
 
   // UPLOAD AVATAR FROM BYTES (Web-compatible)
-  static Future<String?> uploadAvatarBytes(Uint8List bytes, String fileName) async {
+  static Future<String?> uploadAvatarBytes(
+    Uint8List bytes,
+    String fileName,
+  ) async {
     final authUser = client.auth.currentUser;
     if (authUser == null) return null;
 
     final fileExt = fileName.split('.').last;
     final storagePath = '${authUser.id}/avatar.$fileExt';
 
-    await client.storage.from('avatars').uploadBinary(
-      storagePath,
-      bytes,
-      fileOptions: const FileOptions(
-        upsert: true,
-        contentType: 'image/jpeg',
-      ),
-    );
+    await client.storage
+        .from('avatars')
+        .uploadBinary(
+          storagePath,
+          bytes,
+          fileOptions: const FileOptions(
+            upsert: true,
+            contentType: 'image/jpeg',
+          ),
+        );
 
     final publicUrl = client.storage.from('avatars').getPublicUrl(storagePath);
     return publicUrl;

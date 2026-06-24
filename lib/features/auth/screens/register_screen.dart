@@ -96,7 +96,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                   backgroundColor: Colors.green,
                 ),
               );
-              Navigator.pushReplacementNamed(context, AppRoutes.onboardingSetup);
+              Navigator.pushReplacementNamed(
+                context,
+                AppRoutes.onboardingSetup,
+              );
             }
           } else {
             // Email confirmation is enabled — user needs to verify

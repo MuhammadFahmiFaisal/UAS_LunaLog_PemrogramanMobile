@@ -107,7 +107,8 @@ class _Step3JarakSiklusState extends State<Step3JarakSiklus> {
               ),
               children: [
                 const TextSpan(
-                  text: 'Dihitung dari hari pertama haid sampai hari pertama haid berikutnya. ',
+                  text:
+                      'Dihitung dari hari pertama haid sampai hari pertama haid berikutnya. ',
                 ),
                 TextSpan(
                   text: 'Rata-rata 28 hari.',
@@ -122,9 +123,7 @@ class _Step3JarakSiklusState extends State<Step3JarakSiklus> {
           const SizedBox(height: 32),
 
           // Number Picker
-          Expanded(
-            child: _buildNumberPicker(),
-          ),
+          Expanded(child: _buildNumberPicker()),
           const SizedBox(height: 24),
 
           // Info Card
@@ -151,9 +150,7 @@ class _Step3JarakSiklusState extends State<Step3JarakSiklus> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFFBE3EA),
-                  ),
+                  border: Border.all(color: const Color(0xFFFBE3EA)),
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF8B4A5F).withValues(alpha: 0.04),
@@ -241,7 +238,9 @@ class _Step3JarakSiklusState extends State<Step3JarakSiklus> {
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: isSelected ? 32 : 28,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                         color: isSelected
                             ? const Color(0xFF6f3347)
                             : const Color(0xFF524346).withValues(alpha: 0.3),
@@ -251,10 +250,7 @@ class _Step3JarakSiklusState extends State<Step3JarakSiklus> {
                           _scrollToValue(value);
                         },
                         child: Center(
-                          child: Text(
-                            '$value',
-                            textAlign: TextAlign.center,
-                          ),
+                          child: Text('$value', textAlign: TextAlign.center),
                         ),
                       ),
                     ),
@@ -283,9 +279,7 @@ class _Step3JarakSiklusState extends State<Step3JarakSiklus> {
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(
-          color: const Color(0xFFFBE3EA),
-        ),
+        border: Border.all(color: const Color(0xFFFBE3EA)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

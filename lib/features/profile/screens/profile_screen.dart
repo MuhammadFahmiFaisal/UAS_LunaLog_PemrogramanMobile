@@ -43,7 +43,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           try {
             await Supabase.instance.client.from('user_profiles').insert({
               'id': authUser.id,
-              'name': authUser.userMetadata?['full_name'] ??
+              'name':
+                  authUser.userMetadata?['full_name'] ??
                   authUser.userMetadata?['name'] ??
                   '',
               'email': authUser.email ?? '',
