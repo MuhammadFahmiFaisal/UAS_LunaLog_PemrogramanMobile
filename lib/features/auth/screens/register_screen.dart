@@ -64,14 +64,12 @@ class _RegisterScreenState extends State<RegisterScreen>
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      
+
       try {
         final authResponse = await Supabase.instance.client.auth.signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text.trim(),
-          data: {
-            'name': _nameController.text.trim(),
-          },
+          data: {'name': _nameController.text.trim()},
         );
 
         if (!mounted) return;
@@ -217,8 +215,9 @@ class _RegisterScreenState extends State<RegisterScreen>
                 if (value == null || value.trim().isEmpty) {
                   return 'Email tidak boleh kosong';
                 }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                    .hasMatch(value.trim())) {
+                if (!RegExp(
+                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                ).hasMatch(value.trim())) {
                   return 'Masukkan email yang valid';
                 }
                 return null;
@@ -366,11 +365,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.lock_outlined,
-              size: 14,
-              color: Color(0xFF847376),
-            ),
+            Icon(Icons.lock_outlined, size: 14, color: Color(0xFF847376)),
             SizedBox(width: 4),
             Text(
               'Data Anda terenkripsi dan aman bersama kami',

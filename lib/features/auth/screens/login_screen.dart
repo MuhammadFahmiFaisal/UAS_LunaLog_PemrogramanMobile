@@ -70,12 +70,13 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      
+
       try {
-        final authResponse = await Supabase.instance.client.auth.signInWithPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+        final authResponse = await Supabase.instance.client.auth
+            .signInWithPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+            );
 
         if (!mounted) return;
 
@@ -92,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen>
               backgroundColor: Colors.green,
             ),
           );
-          
+
           if (hasCompletedSetup) {
             final isPinEnabled = prefs.getBool('is_pin_enabled') ?? false;
             if (isPinEnabled) {
@@ -214,8 +215,9 @@ class _LoginScreenState extends State<LoginScreen>
                 if (value == null || value.trim().isEmpty) {
                   return 'Email tidak boleh kosong';
                 }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                    .hasMatch(value.trim())) {
+                if (!RegExp(
+                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                ).hasMatch(value.trim())) {
                   return 'Masukkan email yang valid';
                 }
                 return null;
