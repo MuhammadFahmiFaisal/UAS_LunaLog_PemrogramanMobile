@@ -100,9 +100,18 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
         children: [
           _buildMonthNavigation(),
           const SizedBox(height: 20),
-          _buildWeekdayHeaders(),
-          const SizedBox(height: 12),
-          _buildCalendarGrid(),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cellWidth = constraints.maxWidth / 7;
+              return Column(
+                children: [
+                  _buildWeekdayHeaders(cellWidth),
+                  const SizedBox(height: 12),
+                  _buildCalendarGrid(cellWidth),
+                ],
+              );
+            },
+          ),
           const SizedBox(height: 20),
           _buildLegend(),
         ],
@@ -149,13 +158,12 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
     );
   }
 
-  Widget _buildWeekdayHeaders() {
+  Widget _buildWeekdayHeaders(double cellWidth) {
     final weekdays = ['SN', 'SL', 'RB', 'KM', 'JM', 'SB', 'MG'];
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: weekdays.map((day) {
         return SizedBox(
-          width: 36,
+          width: cellWidth,
           child: Text(
             day,
             textAlign: TextAlign.center,
@@ -171,7 +179,7 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
     );
   }
 
-  Widget _buildCalendarGrid() {
+  Widget _buildCalendarGrid(double cellWidth) {
     final daysInMonth = DateTime(
       _currentMonth.year,
       _currentMonth.month + 1,
@@ -190,15 +198,17 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
     for (int i = firstDayWeekday - 1; i > 0; i--) {
       days.add(
         SizedBox(
-          width: 36,
+          width: cellWidth,
           height: 36,
-          child: Text(
-            '${prevMonth.day - i + 1}',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              color: AppTheme.outline.withValues(alpha: 0.4),
+          child: Center(
+            child: Text(
+              '${prevMonth.day - i + 1}',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: AppTheme.outline.withValues(alpha: 0.4),
+              ),
             ),
           ),
         ),
@@ -211,23 +221,25 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
       final isPeriodDay = _periodDayMap[dateKey] ?? false;
       final isFertileDay = _fertileDayMap[dateKey] ?? false;
       final isPmsDay = _pmsDayMap[dateKey] ?? false;
-      days.add(_buildDayCell(day, isPeriodDay, isFertileDay, isPmsDay));
+      days.add(_buildDayCell(day, isPeriodDay, isFertileDay, isPmsDay, cellWidth));
     }
 
     // Next month padding
-    final remainingCells = 42 - days.length;
+    final remainingCells = (7 - (days.length % 7)) % 7;
     for (int i = 1; i <= remainingCells; i++) {
       days.add(
         SizedBox(
-          width: 36,
+          width: cellWidth,
           height: 36,
-          child: Text(
-            '$i',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              color: AppTheme.outline.withValues(alpha: 0.4),
+          child: Center(
+            child: Text(
+              '$i',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: AppTheme.outline.withValues(alpha: 0.4),
+              ),
             ),
           ),
         ),
@@ -241,7 +253,7 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
     );
   }
 
-  Widget _buildDayCell(int day, bool isPeriodDay, bool isFertileDay, bool isPmsDay) {
+  Widget _buildDayCell(int day, bool isPeriodDay, bool isFertileDay, bool isPmsDay, double cellWidth) {
     Color? bgColor;
     Color textColor = AppTheme.onSurface;
     bool isBold = false;
@@ -265,7 +277,7 @@ class _PeriodCalendarState extends State<PeriodCalendar> {
         widget.onDayTap(day, _currentMonth);
       },
       child: Container(
-        width: 36,
+        width: cellWidth,
         height: 36,
         decoration: BoxDecoration(
           color: bgColor,

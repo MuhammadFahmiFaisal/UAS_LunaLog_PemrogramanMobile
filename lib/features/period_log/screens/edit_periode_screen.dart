@@ -42,13 +42,39 @@ class _EditPeriodeScreenState extends State<EditPeriodeScreen> {
         }
         return;
       }
-      
+
+      // Load flow data from daily logs for this period's date range
+      String? derivedFlow;
+      try {
+        final logs = await SupabaseService.getDailyLogsByDateRange(
+          period.startDate,
+          period.endDate ?? period.startDate.add(const Duration(days: 7)),
+        );
+        if (logs.isNotEmpty) {
+          // Determine most common flow level from daily logs
+          final flowCounts = <FlowLevel, int>{};
+          for (final log in logs) {
+            if (log.flow != FlowLevel.none) {
+              flowCounts[log.flow] = (flowCounts[log.flow] ?? 0) + 1;
+            }
+          }
+          if (flowCounts.isNotEmpty) {
+            final mostCommon = flowCounts.entries
+                .reduce((a, b) => a.value >= b.value ? a : b)
+                .key;
+            derivedFlow = _flowLevelToString(mostCommon);
+          }
+        }
+      } catch (_) {
+        // If loading logs fails, fall back to 'Ringan'
+      }
+
       if (mounted) {
         setState(() {
           _period = period;
           _startDate = period.startDate;
           _endDate = period.endDate;
-          _selectedFlow = 'Ringan'; // In a real app, this might come from logs
+          _selectedFlow = derivedFlow ?? 'Ringan';
         });
       }
     } catch (e) {
@@ -63,6 +89,19 @@ class _EditPeriodeScreenState extends State<EditPeriodeScreen> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _flowLevelToString(FlowLevel level) {
+    switch (level) {
+      case FlowLevel.light:
+        return 'Ringan';
+      case FlowLevel.medium:
+        return 'Sedang';
+      case FlowLevel.heavy:
+        return 'Deras';
+      default:
+        return 'Ringan';
     }
   }
 
@@ -106,8 +145,18 @@ class _EditPeriodeScreenState extends State<EditPeriodeScreen> {
 
   String _formatDate(DateTime date) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -142,14 +191,14 @@ class _EditPeriodeScreenState extends State<EditPeriodeScreen> {
     }
 
     setState(() => _isLoading = true);
-    
+
     try {
       final updatedPeriod = Period(
         id: widget.periodId,
         startDate: _startDate!,
         endDate: _endDate,
-        durationDays: _endDate != null 
-            ? _endDate!.difference(_startDate!).inDays + 1 
+        durationDays: _endDate != null
+            ? _endDate!.difference(_startDate!).inDays + 1
             : null,
       );
 
@@ -327,7 +376,9 @@ class _EditPeriodeScreenState extends State<EditPeriodeScreen> {
                     color: date != null
                         ? AppTheme.onSurface
                         : AppTheme.onSurfaceVariant,
-                    fontStyle: date != null ? FontStyle.normal : FontStyle.italic,
+                    fontStyle: date != null
+                        ? FontStyle.normal
+                        : FontStyle.italic,
                   ),
                 ),
               ],
@@ -426,7 +477,9 @@ class _EditPeriodeScreenState extends State<EditPeriodeScreen> {
           children: [
             Icon(
               icon,
-              color: isSelected ? AppTheme.onPrimaryContainer : AppTheme.secondary,
+              color: isSelected
+                  ? AppTheme.onPrimaryContainer
+                  : AppTheme.secondary,
               size: 24,
             ),
             const SizedBox(height: 4),
@@ -509,11 +562,7 @@ class _EditPeriodeScreenState extends State<EditPeriodeScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.info_outline,
-            color: AppTheme.secondary,
-            size: 20,
-          ),
+          const Icon(Icons.info_outline, color: AppTheme.secondary, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Text(

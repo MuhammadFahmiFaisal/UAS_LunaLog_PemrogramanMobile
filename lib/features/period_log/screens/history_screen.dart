@@ -20,6 +20,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<Period> _periods = [];
   List<DailyLog> _dailyLogs = [];
   bool _isLoading = true;
+  bool _isError = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -28,7 +30,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+      _errorMessage = null;
+    });
     try {
       final profile = await SupabaseService.getUserProfile();
       if (profile != null) {
@@ -42,7 +48,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
         }
       }
     } catch (e) {
-      // tampilkan data kosong jika gagal
+      if (mounted) {
+        setState(() {
+          _isError = true;
+          _errorMessage = 'Gagal memuat data: $e';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal memuat data. Tarik ke bawah untuk mencoba lagi.',
+            ),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -57,6 +77,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ? const Center(
                 child: CircularProgressIndicator(color: AppTheme.primary),
               )
+            : _isError
+            ? _buildErrorState()
             : RefreshIndicator(
                 onRefresh: _loadData,
                 color: AppTheme.primary,
@@ -100,9 +122,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       width: double.infinity,
       height: 56,
       child: ElevatedButton(
-      onPressed: () {
-        Navigator.pushNamed(context, AppRoutes.logHarian);
-      },
+        onPressed: () {
+          Navigator.pushNamed(context, AppRoutes.logHarian);
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.secondaryContainer,
           foregroundColor: AppTheme.onSecondaryContainer,
@@ -126,6 +148,60 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return RefreshIndicator(
+      onRefresh: _loadData,
+      color: AppTheme.primary,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+          const Icon(
+            Icons.cloud_off,
+            size: 64,
+            color: AppTheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Gagal memuat data',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _errorMessage ?? 'Terjadi kesalahan yang tidak diketahui.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              color: AppTheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Center(
+            child: ElevatedButton.icon(
+              onPressed: _loadData,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Coba Lagi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

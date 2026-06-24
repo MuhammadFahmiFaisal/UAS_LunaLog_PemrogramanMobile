@@ -17,6 +17,7 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _progressAnimation;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -26,13 +27,15 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
 
     _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
@@ -42,21 +45,39 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
+    _initApp();
+  }
 
-    Future.delayed(const Duration(seconds: 3), () async {
+  Future<void> _initApp() async {
+    try {
+      // Wait minimum 3s for splash animation
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+
       final prefs = await SharedPreferences.getInstance();
       if (!mounted) return;
-      
+
       final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+      final hasCompletedSetup = prefs.getBool('hasCompletedSetup') ?? false;
       final isPinEnabled = prefs.getBool('is_pin_enabled') ?? false;
       final isBiometricEnabled = prefs.getBool('is_biometric_enabled') ?? false;
 
+      // Check session with timeout (5 seconds max)
+      Session? session;
+      try {
+        session = Supabase.instance.client.auth.currentSession;
+      } catch (_) {
+        // Session retrieval can fail if Supabase is unreachable
+        session = null;
+      }
+
       if (!mounted) return;
 
-      final session = Supabase.instance.client.auth.currentSession;
-
       if (session != null) {
-        if (isPinEnabled || isBiometricEnabled) {
+        // Logged-in user who hasn't completed first-time setup
+        if (!hasCompletedSetup) {
+          Navigator.pushReplacementNamed(context, AppRoutes.onboardingSetup);
+        } else if (isPinEnabled || isBiometricEnabled) {
           Navigator.pushReplacementNamed(context, AppRoutes.lockScreen);
         } else {
           Navigator.pushReplacementNamed(context, AppRoutes.main);
@@ -66,7 +87,16 @@ class _SplashScreenState extends State<SplashScreen>
       } else {
         Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _hasError = true);
+      }
+    }
+  }
+
+  Future<void> _retryInit() async {
+    setState(() => _hasError = false);
+    await _initApp();
   }
 
   @override
@@ -178,6 +208,62 @@ class _SplashScreenState extends State<SplashScreen>
               ),
             ),
           ),
+
+          // Error Overlay
+          if (_hasError)
+            Positioned.fill(
+              child: Container(
+                color: const Color(0xFFFFF8F7).withValues(alpha: 0.95),
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.cloud_off,
+                          size: 64,
+                          color: Color(0xFF524346),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Gagal memuat aplikasi',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF311119),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Pastikan koneksi internet tersedia dan coba lagi.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: Color(0xFF524346),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _retryInit,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Coba Lagi'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF8B4A5F),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -75,29 +75,74 @@ class _RegisterScreenState extends State<RegisterScreen>
         if (!mounted) return;
 
         if (authResponse.user != null) {
-          // Buat profil user baru di tabel user_profiles
-          await Supabase.instance.client.from('user_profiles').insert({
-            'id': authResponse.user!.id,
-            'name': _nameController.text.trim(),
-            'email': _emailController.text.trim(),
-          });
+          // Create user profile in database
+          try {
+            await Supabase.instance.client.from('user_profiles').insert({
+              'id': authResponse.user!.id,
+              'name': _nameController.text.trim(),
+              'email': _emailController.text.trim(),
+            });
+          } catch (_) {
+            // Profile may already exist via trigger, continue
+          }
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Registrasi berhasil'),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.pushReplacementNamed(context, AppRoutes.main);
+          // Check if session exists (no email confirmation needed)
+          if (authResponse.session != null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Registrasi berhasil! Selamat datang.'),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: Colors.green,
+                ),
+              );
+              Navigator.pushReplacementNamed(context, AppRoutes.onboardingSetup);
+            }
+          } else {
+            // Email confirmation is enabled — user needs to verify
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Registrasi berhasil! Silakan cek email ${_emailController.text.trim()} untuk verifikasi.',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                  backgroundColor: Colors.blue,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+              Navigator.pop(context); // Go back to login
+            }
+          }
         }
       } catch (e) {
         if (mounted) {
+          // Provide user-friendly error messages
+          String errorMessage;
+          final errorStr = e.toString().toLowerCase();
+          if (errorStr.contains('already registered') ||
+              errorStr.contains('already been registered')) {
+            errorMessage = 'Email ini sudah terdaftar. Silakan masuk.';
+          } else if (errorStr.contains('confirmation email') ||
+              errorStr.contains('sending')) {
+            errorMessage =
+                'Gagal mengirim email verifikasi. Hubungi admin atau coba lagi nanti.';
+          } else if (errorStr.contains('password')) {
+            errorMessage = 'Kata sandi tidak memenuhi syarat minimum.';
+          } else if (errorStr.contains('network') ||
+              errorStr.contains('timeout')) {
+            errorMessage =
+                'Koneksi bermasalah. Periksa internet dan coba lagi.';
+          } else {
+            errorMessage = 'Gagal mendaftar: $e';
+          }
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Gagal mendaftar: $e'),
+              content: Text(errorMessage),
               behavior: SnackBarBehavior.floating,
               backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
             ),
           );
         }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/app_theme.dart';
@@ -15,7 +16,6 @@ class EditProfilScreen extends StatefulWidget {
 class _EditProfilScreenState extends State<EditProfilScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
 
   int _cycleLength = 28;
   int _periodLength = 5;
@@ -25,6 +25,7 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
 
   UserProfile? _profile;
   File? _pickedImageFile;      // file lokal yang baru dipilih user
+  XFile? _pickedXFile;        // XFile for web-compatible preview
   String? _currentAvatarUrl;  // URL dari Supabase (sudah ada)
 
   @override
@@ -37,7 +38,6 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -82,19 +82,23 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.photo_camera, color: AppTheme.primary),
-              title: const Text('Ambil dari Kamera',
-                  style: TextStyle(fontFamily: 'Inter')),
-              onTap: () async {
-                Navigator.pop(ctx);
-                final picked =
-                    await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
-                if (picked != null && mounted) {
-                  setState(() => _pickedImageFile = File(picked.path));
-                }
-              },
-            ),
+            if (!kIsWeb)
+              ListTile(
+                leading: const Icon(Icons.photo_camera, color: AppTheme.primary),
+                title: const Text('Ambil dari Kamera',
+                    style: TextStyle(fontFamily: 'Inter')),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final picked =
+                      await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
+                  if (picked != null && mounted) {
+                    setState(() {
+                      _pickedXFile = picked;
+                      if (!kIsWeb) _pickedImageFile = File(picked.path);
+                    });
+                  }
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: AppTheme.primary),
               title: const Text('Pilih dari Galeri',
@@ -104,7 +108,10 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                 final picked =
                     await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
                 if (picked != null && mounted) {
-                  setState(() => _pickedImageFile = File(picked.path));
+                  setState(() {
+                    _pickedXFile = picked;
+                    if (!kIsWeb) _pickedImageFile = File(picked.path);
+                  });
                 }
               },
             ),
@@ -120,24 +127,24 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
       _showSnack('Nama tidak boleh kosong', isError: true);
       return;
     }
-    if (_emailController.text.trim().isEmpty ||
-        !_emailController.text.contains('@')) {
-      _showSnack('Email tidak valid', isError: true);
-      return;
-    }
 
     setState(() => _isSaving = true);
     try {
       String? avatarUrl = _currentAvatarUrl;
 
       // Upload foto baru jika user memilih gambar
-      if (_pickedImageFile != null) {
-        avatarUrl = await SupabaseService.uploadAvatar(_pickedImageFile!);
+      if (_pickedXFile != null) {
+        if (kIsWeb) {
+          // On web, read bytes and upload directly
+          final bytes = await _pickedXFile!.readAsBytes();
+          avatarUrl = await SupabaseService.uploadAvatarBytes(bytes, _pickedXFile!.name);
+        } else {
+          avatarUrl = await SupabaseService.uploadAvatar(_pickedImageFile!);
+        }
       }
 
       final updatedProfile = _profile!.copyWith(
         name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
         avatarUrl: avatarUrl,
         cycleLength: _cycleLength,
         periodDuration: _periodLength,
@@ -257,15 +264,17 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
                   ],
                 ),
                 child: ClipOval(
-                  child: _pickedImageFile != null
-                      // Tampilkan gambar yang baru dipilih
-                      ? Image.file(_pickedImageFile!, fit: BoxFit.cover)
-                      // Tampilkan avatar dari Supabase atau fallback ikon
+                  child: _pickedXFile != null
+                      // Show newly picked image (web-compatible)
+                      ? (kIsWeb
+                          ? Image.network(_pickedXFile!.path, fit: BoxFit.cover)
+                          : Image.file(_pickedImageFile!, fit: BoxFit.cover))
+                      // Show existing avatar from Supabase or fallback
                       : (_currentAvatarUrl != null && _currentAvatarUrl!.isNotEmpty
                           ? Image.network(
                               _currentAvatarUrl!,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => _avatarFallback(),
+                              errorBuilder: (_, _, _) => _avatarFallback(),
                             )
                           : _avatarFallback()),
                 ),
@@ -330,20 +339,10 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
           onChanged: (_) => setState(() {}), // update nama di avatar section
         ),
         const SizedBox(height: 12),
-        _buildInputField(
+        _buildReadOnlyField(
           label: 'Email Address',
           controller: _emailController,
           icon: Icons.mail_outline,
-          hintText: 'Masukkan email',
-          keyboardType: TextInputType.emailAddress,
-        ),
-        const SizedBox(height: 12),
-        _buildInputField(
-          label: 'Phone Number',
-          controller: _phoneController,
-          icon: Icons.phone_outlined,
-          hintText: '+62 (555) 000-0000',
-          keyboardType: TextInputType.phone,
         ),
       ],
     );
@@ -405,6 +404,55 @@ class _EditProfilScreenState extends State<EditProfilScreen> {
             fontFamily: 'Inter',
             fontSize: 16,
             color: AppTheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReadOnlyField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.primary,
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        TextField(
+          controller: controller,
+          readOnly: true,
+          enabled: false,
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, color: AppTheme.onSurfaceVariant, size: 20),
+            filled: true,
+            fillColor: AppTheme.surfaceContainerLow,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.outlineVariant),
+            ),
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppTheme.outlineVariant.withValues(alpha: 0.3)),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 16,
+            color: AppTheme.onSurfaceVariant.withValues(alpha: 0.7),
           ),
         ),
       ],

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/routes/app_routes.dart';
+import '../../../core/models/models.dart';
+import '../../../core/services/supabase_service.dart';
 import 'step1_tanggal_haid.dart';
 import 'step2_durasi_haid.dart';
 import 'step3_jarak_siklus.dart';
@@ -52,10 +55,10 @@ class _OnboardingSetupScreenState extends State<OnboardingSetupScreen> {
 
   Future<void> _completeSetup() async {
     setState(() => _isLoading = true);
+
+    // 1. Save to local storage
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('hasCompletedSetup', true);
-
-    // Save setup data
     if (_selectedDate != null) {
       await prefs.setString('lastPeriodDate', _selectedDate!.toIso8601String());
     }
@@ -63,6 +66,43 @@ class _OnboardingSetupScreenState extends State<OnboardingSetupScreen> {
     await prefs.setInt('cycleLength', _cycleLength);
     if (_selectedGoal != null) {
       await prefs.setString('userGoal', _selectedGoal!);
+    }
+
+    // 2. Sync cycle data to Supabase backend
+    final authUser = Supabase.instance.client.auth.currentUser;
+    if (authUser != null) {
+      try {
+        // Fetch existing profile to preserve name/email/avatar
+        final existingProfile = await SupabaseService.getUserProfile();
+        await SupabaseService.updateUserProfile(
+          UserProfile(
+            id: authUser.id,
+            name:
+                existingProfile?.name ??
+                authUser.userMetadata?['full_name'] ??
+                '',
+            email: existingProfile?.email ?? authUser.email ?? '',
+            avatarUrl: existingProfile?.avatarUrl,
+            lastPeriodDate: _selectedDate,
+            periodDuration: _durationDays,
+            cycleLength: _cycleLength,
+            goal: _selectedGoal,
+          ),
+        );
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Data tersimpan lokal, namun gagal sinkronisasi ke server: $e',
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
     }
 
     if (mounted) {
@@ -297,7 +337,9 @@ class _OnboardingSetupScreenState extends State<OnboardingSetupScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6f3347),
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: const Color(0xFF6f3347).withValues(alpha: 0.5),
+                disabledBackgroundColor: const Color(
+                  0xFF6f3347,
+                ).withValues(alpha: 0.5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(28),
                 ),

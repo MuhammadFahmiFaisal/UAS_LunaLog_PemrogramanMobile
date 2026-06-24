@@ -102,62 +102,68 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          // Month Navigation
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final cellWidth = constraints.maxWidth / 7;
+          return Column(
             children: [
-              Text(
-                _getMonthName(_focusedMonth.month),
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF311119),
-                ),
-              ),
+              // Month Navigation
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildNavButton(
-                    icon: Icons.chevron_left,
-                    onTap: _previousMonth,
+                  Text(
+                    _getMonthName(_focusedMonth.month),
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF311119),
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  _buildNavButton(
-                    icon: Icons.chevron_right,
-                    onTap: _nextMonth,
+                  Row(
+                    children: [
+                      _buildNavButton(
+                        icon: Icons.chevron_left,
+                        onTap: _previousMonth,
+                      ),
+                      const SizedBox(width: 8),
+                      _buildNavButton(
+                        icon: Icons.chevron_right,
+                        onTap: _nextMonth,
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-          // Day Headers
-          Row(
-            children: ['M', 'S', 'S', 'R', 'K', 'J', 'S'].map((day) {
-              return Expanded(
-                child: Center(
-                  child: Text(
-                    day,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF847376),
-                      letterSpacing: 0.05,
+              // Day Headers
+              Row(
+                children: ['M', 'S', 'S', 'R', 'K', 'J', 'S'].map((day) {
+                  return SizedBox(
+                    width: cellWidth,
+                    child: Center(
+                      child: Text(
+                        day,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF847376),
+                          letterSpacing: 0.05,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 16),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
 
-          // Calendar Grid
-          _buildCalendarGrid(),
-        ],
+              // Calendar Grid
+              _buildCalendarGrid(cellWidth),
+            ],
+          );
+        },
       ),
     );
   }
@@ -184,7 +190,7 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
     );
   }
 
-  Widget _buildCalendarGrid() {
+  Widget _buildCalendarGrid(double cellWidth) {
     final firstDay = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
     final lastDay = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
     final firstWeekday = firstDay.weekday;
@@ -195,7 +201,7 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
     final prevMonthLastDay = DateTime(_focusedMonth.year, _focusedMonth.month, 0).day;
     for (int i = firstWeekday - 1; i > 0; i--) {
       final day = prevMonthLastDay - i + 1;
-      days.add(_buildDayCell(day, isCurrentMonth: false));
+      days.add(_buildDayCell(day, cellWidth: cellWidth, isCurrentMonth: false));
     }
 
     // Current month days
@@ -211,6 +217,7 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
 
       days.add(_buildDayCell(
         day,
+        cellWidth: cellWidth,
         isCurrentMonth: true,
         isSelected: isSelected,
         isToday: isToday,
@@ -218,21 +225,20 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
       ));
     }
 
-    // Next month days
-    final remainingCells = 42 - days.length;
+    // Next month days to fill 6 rows
+    final remainingCells = (7 - (days.length % 7)) % 7;
     for (int day = 1; day <= remainingCells; day++) {
-      days.add(_buildDayCell(day, isCurrentMonth: false));
+      days.add(_buildDayCell(day, cellWidth: cellWidth, isCurrentMonth: false));
     }
 
     return Wrap(
-      spacing: 4,
-      runSpacing: 8,
       children: days,
     );
   }
 
   Widget _buildDayCell(
     int day, {
+    required double cellWidth,
     required bool isCurrentMonth,
     bool isSelected = false,
     bool isToday = false,
@@ -240,29 +246,35 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
   }) {
     return GestureDetector(
       onTap: isCurrentMonth ? onTap : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 40,
+      child: SizedBox(
+        width: cellWidth,
         height: 40,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: isSelected ? const Color(0xFF6f3347) : null,
-          border: isToday && !isSelected
-              ? Border.all(color: const Color(0xFF6f3347), width: 1.5)
-              : null,
-        ),
         child: Center(
-          child: Text(
-            '$day',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              fontWeight: isToday || isSelected ? FontWeight.w600 : FontWeight.w400,
-              color: isSelected
-                  ? Colors.white
-                  : isCurrentMonth
-                      ? const Color(0xFF311119)
-                      : const Color(0xFFD6C1C5),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isSelected ? const Color(0xFF6f3347) : null,
+              border: isToday && !isSelected
+                  ? Border.all(color: const Color(0xFF6f3347), width: 1.5)
+                  : null,
+            ),
+            child: Center(
+              child: Text(
+                '$day',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  fontWeight: isToday || isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected
+                      ? Colors.white
+                      : isCurrentMonth
+                          ? const Color(0xFF311119)
+                          : const Color(0xFFD6C1C5),
+                ),
+              ),
             ),
           ),
         ),

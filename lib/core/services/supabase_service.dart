@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
+
 class SupabaseService {
   static final client = Supabase.instance.client;
 
@@ -24,13 +26,24 @@ class SupabaseService {
     final authUser = client.auth.currentUser;
     if (authUser == null) return;
 
-    await client.from('user_profiles').update({
+    final data = <String, dynamic>{
       'name': profile.name,
       'email': profile.email,
       'avatar_url': profile.avatarUrl,
       'cycle_length': profile.cycleLength,
       'period_duration': profile.periodDuration,
-    }).eq('id', authUser.id);
+    };
+
+    if (profile.lastPeriodDate != null) {
+      data['last_period_date'] = profile.lastPeriodDate!
+          .toIso8601String()
+          .split('T')[0];
+    }
+    if (profile.goal != null) {
+      data['goal'] = profile.goal;
+    }
+
+    await client.from('user_profiles').update(data).eq('id', authUser.id);
   }
 
   // UPLOAD AVATAR TO SUPABASE STORAGE
@@ -41,13 +54,36 @@ class SupabaseService {
     final fileExt = imageFile.path.split('.').last;
     final fileName = '${authUser.id}/avatar.$fileExt';
 
-    await client.storage.from('avatars').upload(
-      fileName,
-      imageFile,
-      fileOptions: const FileOptions(upsert: true),
-    );
+    await client.storage
+        .from('avatars')
+        .upload(
+          fileName,
+          imageFile,
+          fileOptions: const FileOptions(upsert: true),
+        );
 
     final publicUrl = client.storage.from('avatars').getPublicUrl(fileName);
+    return publicUrl;
+  }
+
+  // UPLOAD AVATAR FROM BYTES (Web-compatible)
+  static Future<String?> uploadAvatarBytes(Uint8List bytes, String fileName) async {
+    final authUser = client.auth.currentUser;
+    if (authUser == null) return null;
+
+    final fileExt = fileName.split('.').last;
+    final storagePath = '${authUser.id}/avatar.$fileExt';
+
+    await client.storage.from('avatars').uploadBinary(
+      storagePath,
+      bytes,
+      fileOptions: const FileOptions(
+        upsert: true,
+        contentType: 'image/jpeg',
+      ),
+    );
+
+    final publicUrl = client.storage.from('avatars').getPublicUrl(storagePath);
     return publicUrl;
   }
 
@@ -55,13 +91,13 @@ class SupabaseService {
   static Future<List<Period>> getPeriods() async {
     final authUser = client.auth.currentUser;
     if (authUser == null) return [];
-    
+
     final response = await client
         .from('periods')
         .select()
         .eq('user_profile_id', authUser.id)
         .order('start_date', ascending: false);
-        
+
     return (response as List).map((e) => Period.fromJson(e)).toList();
   }
 
@@ -83,14 +119,14 @@ class SupabaseService {
     final data = period.toJson();
     data.remove('id'); // Let Supabase generate ID if it's new
     data['user_profile_id'] = authUser.id;
-    
+
     await client.from('periods').insert(data);
   }
 
   static Future<void> updatePeriod(String periodId, Period period) async {
     final data = period.toJson();
-    data.remove('id'); 
-    
+    data.remove('id');
+
     await client.from('periods').update(data).eq('id', periodId);
   }
 
@@ -108,12 +144,14 @@ class SupabaseService {
         .select()
         .eq('user_profile_id', authUser.id)
         .order('log_date', ascending: false);
-        
+
     return (response as List).map((e) => DailyLog.fromJson(e)).toList();
   }
 
   static Future<List<DailyLog>> getDailyLogsByDateRange(
-      DateTime startDate, DateTime? endDate) async {
+    DateTime startDate,
+    DateTime? endDate,
+  ) async {
     final authUser = client.auth.currentUser;
     if (authUser == null) return [];
 
@@ -140,10 +178,9 @@ class SupabaseService {
     data['user_profile_id'] = authUser.id;
 
     // Upsert to handle unique constraint on (user_profile_id, log_date)
-    await client.from('daily_logs').upsert(
-      data,
-      onConflict: 'user_profile_id, log_date',
-    );
+    await client
+        .from('daily_logs')
+        .upsert(data, onConflict: 'user_profile_id, log_date');
   }
 
   // ARTICLES REPOSITORY

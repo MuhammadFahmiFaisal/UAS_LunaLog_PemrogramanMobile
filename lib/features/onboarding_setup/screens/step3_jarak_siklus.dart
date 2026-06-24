@@ -46,22 +46,27 @@ class _Step3JarakSiklusState extends State<Step3JarakSiklus> {
   }
 
   void _scrollToValue(int value, {bool animate = true}) {
-    final targetOffset = (value - 15) * _itemHeight;
+    // Offset so the selected value appears centered in the highlight band
+    final targetIndex = value - 15;
+    final targetOffset = (targetIndex - 2) * _itemHeight;
     if (animate) {
       _scrollController.animateTo(
-        targetOffset,
+        targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
       );
     } else {
-      _scrollController.jumpTo(targetOffset);
+      _scrollController.jumpTo(
+        targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+      );
     }
   }
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
     final offset = _scrollController.offset;
-    final centerIndex = (offset / _itemHeight).round();
+    // The highlight band is at position 2 from the top of the viewport
+    final centerIndex = (offset / _itemHeight).round() + 2;
     final newValue = (centerIndex + 15).clamp(15, 45);
 
     if (newValue != _selectedValue) {
