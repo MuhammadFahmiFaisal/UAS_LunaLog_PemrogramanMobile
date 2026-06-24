@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -111,9 +112,13 @@ class _RegisterScreenState extends State<RegisterScreen>
   Future<void> _handleOAuthLogin(OAuthProvider provider) async {
     setState(() => _isLoading = true);
     try {
+      final redirectTo = kIsWeb
+          ? '${Uri.base.origin}/'
+          : 'io.lunalog.app://login-callback';
+
       await Supabase.instance.client.auth.signInWithOAuth(
         provider,
-        redirectTo: 'io.lunalog.app://login-callback',
+        redirectTo: redirectTo,
       );
       // Navigasi ditangani oleh onAuthStateChange listener di initState
     } catch (e) {
