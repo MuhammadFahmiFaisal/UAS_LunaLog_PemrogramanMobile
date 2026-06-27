@@ -53,7 +53,7 @@ class ProfileHeader extends StatelessWidget {
               right: 0,
               child: GestureDetector(
                 onTap: () {
-                  Navigator.pushNamed(context, AppRoutes.editProfile);
+                  Navigator.pushNamed(context, AppRoutes.editProfil);
                 },
                 child: Container(
                   padding: const EdgeInsets.all(6),

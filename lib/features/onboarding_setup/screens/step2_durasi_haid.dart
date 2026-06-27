@@ -76,6 +76,7 @@ class _Step2DurasiHaidState extends State<Step2DurasiHaid> {
           _buildInfoCard(),
         ],
       ),
+    ),
     );
   }
 
@@ -221,7 +222,6 @@ class _Step2DurasiHaidState extends State<Step2DurasiHaid> {
           ),
         ],
       ),
-    ),
     );
   }
 
