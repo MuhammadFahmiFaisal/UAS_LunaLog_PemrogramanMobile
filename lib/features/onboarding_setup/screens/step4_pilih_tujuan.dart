@@ -17,54 +17,55 @@ class Step4PilihTujuan extends StatefulWidget {
 class _Step4PilihTujuanState extends State<Step4PilihTujuan> {
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
 
-          // Title Section
-          const Text(
-            'Apa tujuan utamamu menggunakan LunaLog?',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF311119),
+            // Title Section
+            const Text(
+              'Apa tujuan utamamu menggunakan LunaLog?',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF311119),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Pilih tujuan yang paling sesuai agar kami dapat memberikan pengalaman yang personal untukmu.',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF524346).withValues(alpha: 0.8),
-              height: 1.5,
+            const SizedBox(height: 12),
+            Text(
+              'Pilih tujuan yang paling sesuai agar kami dapat memberikan pengalaman yang personal untukmu.',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF524346).withValues(alpha: 0.8),
+                height: 1.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 32),
+            const SizedBox(height: 32),
 
-          // Option Cards
-          _buildOptionCard(
-            id: 'pantau_siklus',
-            icon: Icons.calendar_today,
-            title: 'Pantau Siklus',
-            description: 'Lacak periode, gejala, dan prediksi masa subur bulananmu.',
-          ),
-          const SizedBox(height: 16),
-          _buildOptionCard(
-            id: 'promil',
-            icon: Icons.child_care,
-            title: 'Promil',
-            description: 'Optimalkan peluang kehamilan dengan pelacakan masa subur intensif.',
-          ),
+            // Option Cards
+            _buildOptionCard(
+              id: 'pantau_siklus',
+              icon: Icons.calendar_today,
+              title: 'Pantau Siklus',
+              description: 'Lacak periode, gejala, dan prediksi masa subur bulananmu.',
+            ),
+            const SizedBox(height: 16),
+            _buildOptionCard(
+              id: 'promil',
+              icon: Icons.child_care,
+              title: 'Promil',
+              description: 'Optimalkan peluang kehamilan dengan pelacakan masa subur intensif.',
+            ),
 
-          const Spacer(),
+            const SizedBox(height: 32),
 
-          // Quote
+            // Quote
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),

@@ -37,6 +37,11 @@ class NotificationService {
     
     if (!isEnabled) return;
 
+    // Request permission just-in-time (Memenuhi Poin 5 Audit ISO)
+    final androidImplementation = _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await androidImplementation?.requestNotificationsPermission();
+
     final reminderDate = expectedDate.subtract(const Duration(days: 2));
     if (reminderDate.isBefore(DateTime.now())) return; // past date
 
@@ -65,6 +70,11 @@ class NotificationService {
     await _flutterLocalNotificationsPlugin.cancel(id: 2); // cancel old
     
     if (!isEnabled) return;
+
+    // Request permission just-in-time (Memenuhi Poin 5 Audit ISO)
+    final androidImplementation = _flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await androidImplementation?.requestNotificationsPermission();
 
     final fertilityDate = expectedDate.subtract(const Duration(days: 14)); // simple ovulaton estimate
     if (fertilityDate.isBefore(DateTime.now())) return; 

@@ -77,54 +77,55 @@ class _Step3JarakSiklusState extends State<Step3JarakSiklus> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 16),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 16),
 
-          // Title Section
-          const Text(
-            'Berapa lama jarak antar siklusmu?',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 28,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF6f3347),
-              letterSpacing: -0.01,
-            ),
-          ),
-          const SizedBox(height: 12),
-          RichText(
-            text: TextSpan(
+            // Title Section
+            const Text(
+              'Berapa lama jarak antar siklusmu?',
               style: TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF524346).withValues(alpha: 0.8),
-                height: 1.5,
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6f3347),
+                letterSpacing: -0.01,
               ),
-              children: [
-                const TextSpan(
-                  text:
-                      'Dihitung dari hari pertama haid sampai hari pertama haid berikutnya. ',
-                ),
-                TextSpan(
-                  text: 'Rata-rata 28 hari.',
-                  style: TextStyle(
-                    color: const Color(0xFF6f3347),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
             ),
-          ),
-          const SizedBox(height: 32),
+            const SizedBox(height: 12),
+            RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF524346).withValues(alpha: 0.8),
+                  height: 1.5,
+                ),
+                children: [
+                  const TextSpan(
+                    text:
+                        'Dihitung dari hari pertama haid sampai hari pertama haid berikutnya. ',
+                  ),
+                  TextSpan(
+                    text: 'Rata-rata 28 hari.',
+                    style: TextStyle(
+                      color: const Color(0xFF6f3347),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
 
-          // Number Picker
-          Expanded(child: _buildNumberPicker()),
-          const SizedBox(height: 24),
+            // Number Picker
+            _buildNumberPicker(),
+            const SizedBox(height: 24),
 
           // Info Card
           _buildInfoCard(),

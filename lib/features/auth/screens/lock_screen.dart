@@ -50,9 +50,12 @@ class _LockScreenState extends State<LockScreen> {
         biometricOnly: true,
         persistAcrossBackgrounding: true,
       );
-      if (didAuthenticate && mounted) {
+      if (didAuthenticate) {
         final prefs = await SharedPreferences.getInstance();
         final hasCompletedSetup = prefs.getBool('hasCompletedSetup') ?? false;
+        
+        if (!mounted) return;
+
         if (hasCompletedSetup) {
           Navigator.pushReplacementNamed(context, AppRoutes.main);
         } else {

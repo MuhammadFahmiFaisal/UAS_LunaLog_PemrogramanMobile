@@ -91,14 +91,13 @@ class _ExportSectionState extends State<ExportSection> {
                           logs: widget.logs,
                         );
                       } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Gagal mengekspor PDF: $e'),
-                              backgroundColor: AppTheme.error,
-                            ),
-                          );
-                        }
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Gagal mengekspor PDF: $e'),
+                            backgroundColor: AppTheme.error,
+                          ),
+                        );
                       } finally {
                         if (mounted) setState(() => _isExporting = false);
                       }
