@@ -343,28 +343,12 @@ class _RegisterScreenState extends State<RegisterScreen>
               children: [
                 Expanded(
                   child: SocialButton(
-                    label: 'Google',
+                    label: 'Lanjutkan dengan Google',
                     onPressed: () => _handleOAuthLogin(OAuthProvider.google),
                     icon: SvgPicture.asset(
                       'assets/icons/google-logo.svg',
-                      width: 20,
-                      height: 20,
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFF8B4A5F),
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: SocialButton(
-                    label: 'Facebook',
-                    onPressed: () => _handleOAuthLogin(OAuthProvider.facebook),
-                    icon: const Icon(
-                      Icons.facebook,
-                      size: 20,
-                      color: Color(0xFF8B4A5F),
+                      width: 24,
+                      height: 24,
                     ),
                   ),
                 ),
