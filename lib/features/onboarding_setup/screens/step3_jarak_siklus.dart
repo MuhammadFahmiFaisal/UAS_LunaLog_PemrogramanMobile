@@ -131,6 +131,7 @@ class _Step3JarakSiklusState extends State<Step3JarakSiklus> {
           _buildInfoCard(),
         ],
       ),
+    ),
     );
   }
 

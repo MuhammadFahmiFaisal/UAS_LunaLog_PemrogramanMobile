@@ -248,9 +248,36 @@ File `android/app/src/main/AndroidManifest.xml`:
 
 ---
 
-## 8. Langkah Selanjutnya (Opsional)
+## 9. Pembaruan Lanjutan (QA, Keamanan, & CI/CD)
 
-- **Pengujian OAuth menyeluruh**: Verifikasi data user Google/Facebook tersimpan ke `user_profiles` (butuh database trigger di Supabase).
+Berikut adalah ringkasan peningkatan keamanan dan operasional yang telah diterapkan pada fase QA:
+
+### A. Pengamanan Kredensial (Environment Variables)
+- Menghapus *hardcoded* Supabase URL dan Key dari `main.dart`.
+- Menjadikan file `.env` sebagai sumber tunggal kebenaran (SSOT) untuk kredensial.
+- Melindungi `AndroidManifest.xml` dengan mematikan celah *cleartext traffic* (`android:usesCleartextTraffic="false"`).
+- Menerapkan *Just-In-Time Permissions* pada `NotificationService` untuk mematuhi regulasi privasi.
+
+### B. Bug Fixing (Stabilitas Aplikasi)
+- Memperbaiki 6 celah `use_build_context_synchronously` pada:
+  1. `lock_screen.dart` (saat verifikasi biometrik).
+  2. `export_section.dart` (saat *generate* PDF gagal/batal).
+  3. `detail_riwayat_screen.dart` (saat penghapusan data di jaringan lambat).
+- **Resolusi**: Mengimplementasikan pengecekan `if (!context.mounted) return;` pasca pemanggilan `await` sehingga mencegah *Memory Leak* dan *Force Close* saat pengguna menavigasi layar terlalu cepat.
+- **UI Bug**: Memperbaiki *overflow* layar pada *Onboarding Setup* dengan membungkus konten menggunakan `SingleChildScrollView`.
+- Mengganti ikon bawaan Flutter menjadi logo resmi LunaLog melalui `flutter_launcher_icons`.
+
+### C. CI/CD (Continuous Integration & Deployment)
+- Mengotomatiskan pembuatan file instalasi (APK) menggunakan **GitHub Actions**.
+- Konfigurasi diletakkan pada `.github/workflows/build.yml`.
+- **Injeksi Secret**: Kredensial Supabase dimasukkan secara dinamis ke lingkungan CI melalui fitur *GitHub Repository Secrets* (`secrets.SUPABASE_URL` & `secrets.SUPABASE_ANON_KEY`), tanpa perlu mengunggah file `.env` ke publik.
+- Memperbaiki kompabilitas *plugin* Java 8 (`flutter_local_notifications`) dengan mengaktifkan `isCoreLibraryDesugaringEnabled = true` dan meng-upgrade `desugar_jdk_libs` ke versi `2.1.4` pada Gradle.
+
+---
+
+## 10. Langkah Selanjutnya (Opsional)
+
+- **Pengujian OAuth menyeluruh**: Verifikasi data user Google tersimpan ke `user_profiles` (butuh database trigger di Supabase).
 - **Notifikasi siklus**: Push notification saat periode diperkirakan tiba.
 - **Refresh token & sesi**: Handle expired session secara graceful.
 - **Pengujian keseluruhan**: End-to-end flow dari daftar → input data → lihat histori → edit profil.

@@ -107,3 +107,27 @@ uas_lunalog_pemrogramanmobile/
    Lalu, isi nilai `SUPABASE_URL` dan `SUPABASE_ANON_KEY` sesuai dengan proyek Supabase Anda.
 5. Hubungkan emulator atau *smartphone* fisik (Android/iOS).
 6. Jalankan aplikasi dengan perintah `flutter run`.
+
+---
+
+## 🔒 Keamanan (Security)
+
+Aplikasi ini mengedepankan privasi pengguna dan praktik keamanan terbaik, termasuk:
+- **Environment Variables**: Menyembunyikan Supabase API Keys di dalam `.env` agar tidak bocor di repositori publik.
+- **Koneksi Aman**: Memblokir HTTP cleartext (`usesCleartextTraffic="false"`) sehingga seluruh data dikirim via enkripsi HTTPS yang aman.
+- **Biometrik & PIN Lokal**: Melindungi privasi akses harian menggunakan pengunci perangkat (*App Lock*).
+- **Just-In-Time Permissions**: Aplikasi baru akan meminta akses Notifikasi, Kamera, atau Galeri ketika pengguna benar-benar akan menggunakannya.
+
+---
+
+## 🛠️ Build & Deployment (CI/CD)
+
+Proyek ini telah dikonfigurasi menggunakan **GitHub Actions** untuk otomatisasi (CI/CD). 
+
+Setiap kali Anda melakukan `git push` ke _branch_ `main`, GitHub akan secara otomatis:
+1. Memverifikasi kode menggunakan `flutter analyze` dan format kode.
+2. Memuat variabel rahasia (_secrets_) produksi untuk disuntikkan secara dinamis saat kompilasi.
+3. Melakukan *build* dan menghasilkan _file_ **APK Android** (`app-release.apk`).
+4. Mengunggahnya sebagai *artifact* yang siap diunduh di tab **Actions** pada repository GitHub.
+
+Anda tidak perlu khawatir jika laptop Anda spesifikasinya rendah atau tidak menginstall Android Studio secara lengkap, karena GitHub server akan membangun *file* instalasinya untuk Anda!

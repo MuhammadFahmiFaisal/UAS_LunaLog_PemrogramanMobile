@@ -84,6 +84,7 @@ class _Step4PilihTujuanState extends State<Step4PilihTujuan> {
           const SizedBox(height: 16),
         ],
       ),
+    ),
     );
   }
 

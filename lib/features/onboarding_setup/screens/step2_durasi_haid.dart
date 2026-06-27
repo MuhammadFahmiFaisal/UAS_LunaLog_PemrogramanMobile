@@ -221,6 +221,7 @@ class _Step2DurasiHaidState extends State<Step2DurasiHaid> {
           ),
         ],
       ),
+    ),
     );
   }
 
