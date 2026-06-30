@@ -190,7 +190,8 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
   Widget _buildCalendarGrid(double cellWidth) {
     final firstDay = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
     final lastDay = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
-    final firstWeekday = firstDay.weekday;
+    // Ubah offset agar Minggu = 0, Senin = 1, ..., Sabtu = 6
+    final offset = firstDay.weekday % 7;
 
     final days = <Widget>[];
 
@@ -200,8 +201,8 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
       _focusedMonth.month,
       0,
     ).day;
-    for (int i = firstWeekday - 1; i > 0; i--) {
-      final day = prevMonthLastDay - i + 1;
+    for (int i = 0; i < offset; i++) {
+      final day = prevMonthLastDay - offset + i + 1;
       days.add(_buildDayCell(day, cellWidth: cellWidth, isCurrentMonth: false));
     }
 
@@ -230,7 +231,7 @@ class _Step1TanggalHaidState extends State<Step1TanggalHaid> {
       );
     }
 
-    // Next month days to fill 6 rows
+    // Next month days
     final remainingCells = (7 - (days.length % 7)) % 7;
     for (int day = 1; day <= remainingCells; day++) {
       days.add(_buildDayCell(day, cellWidth: cellWidth, isCurrentMonth: false));
